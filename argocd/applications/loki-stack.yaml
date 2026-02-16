@@ -25,6 +25,10 @@ spec:
         
         grafana:
           enabled: false  # Already deployed with prometheus-stack
+          sidecar:
+            datasources:
+              enabled: true
+              defaultDatasourceEnabled: false  # Don't mark Loki as default
   
   destination:
     server: https://kubernetes.default.svc
