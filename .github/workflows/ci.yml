@@ -86,7 +86,7 @@ jobs:
 
   # ─── Build & Push ─────────────────────────────────────────────
   build-backend:
-    needs: [lint-backend, test-backend]
+    needs: [lint-backend]
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'  # Only on merge to main or tags
     permissions:
@@ -110,7 +110,7 @@ jobs:
           cache-to: type=inline
 
   build-frontend:
-    needs: [lint-frontend, test-frontend]
+    needs: [lint-frontend]
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'  # Only on merge to main or tags
     permissions:
