@@ -9,8 +9,9 @@ Permettre à l'équipe d'accéder aux services du cluster K3s (Grafana, Promethe
 ### Sur le node master K3s (192.168.1.40)
 
 ✅ Tailscale installé en mode **Subnet Router**
-- Expose tout le réseau `192.168.1.0/24` via le VPN
-- Permet l'accès aux 3 nodes K3s + tous les services
+- Expose **uniquement les 3 nodes K3s** : `192.168.1.40/32`, `192.168.1.41/32`, `192.168.1.42/32`
+- **Sécurisé** : Le reste du réseau 192.168.1.x n'est PAS accessible
+- Permet l'accès aux 3 nodes K3s + tous les services déployés dessus
 
 ### Configuration système
 
@@ -30,7 +31,7 @@ net.ipv6.conf.all.forwarding = 1
 **Sur le master (192.168.1.40)** :
 
 ```bash
-tailscale up --advertise-routes=192.168.1.0/24 \
+tailscale up --advertise-routes=192.168.1.40/32,192.168.1.41/32,192.168.1.42/32 \
              --accept-routes \
              --hostname=k3s-master
 ```
@@ -46,7 +47,10 @@ https://login.tailscale.com/a/XXXXXXXX
 2. Trouver la machine `k3s-master`
 3. Cliquer sur les `...` (menu)
 4. Sélectionner **"Edit route settings..."**
-5. **Approuver** la route `192.168.1.0/24`
+5. **Approuver** les 3 routes :
+   - ✅ `192.168.1.40/32` (master)
+   - ✅ `192.168.1.41/32` (agent-1)
+   - ✅ `192.168.1.42/32` (agent-2)
 6. Cliquer sur **"Save"**
 
 ✅ Le subnet routing est maintenant actif !
@@ -132,13 +136,16 @@ curl -I http://argocd.devboard.local
 
 ## 🛠️ Dépannage
 
-### Impossible de joindre 192.168.1.x
+### Impossible de joindre 192.168.1.40-42
 
-**Problème** : Subnet route non activée
+**Problème** : Routes spécifiques non activées
 
 **Solution** :
 1. Vérifier sur https://login.tailscale.com/admin/machines
-2. Vérifier que `k3s-master` a bien la route `192.168.1.0/24` **approved**
+2. Vérifier que `k3s-master` a bien les 3 routes **approved** :
+   - 192.168.1.40/32
+   - 192.168.1.41/32
+   - 192.168.1.42/32
 
 ### Services inaccessibles
 
@@ -167,11 +174,15 @@ Internet
    ↓
 [Tailscale VPN] ← Chaque membre de l'équipe
    ↓
-k3s-master (192.168.1.40) ← Subnet Router
+k3s-master (192.168.1.40) ← Subnet Router (routes spécifiques uniquement)
    ↓
-   ├─→ 192.168.1.40 (master)  ← Grafana, Prometheus, ArgoCD, Vault
-   ├─→ 192.168.1.41 (agent-1)
-   └─→ 192.168.1.42 (agent-2)
+   ├─→ 192.168.1.40/32 (master)  ← Grafana, Prometheus, ArgoCD, Vault
+   ├─→ 192.168.1.41/32 (agent-1)
+   └─→ 192.168.1.42/32 (agent-2)
+
+⚠️ Note importante : Seuls les 3 nodes K3s sont exposés.
+Le reste du réseau 192.168.1.x (box, NAS, imprimantes, etc.) 
+reste inaccessible via Tailscale → Sécurité renforcée !
 ```
 
 ## 🔐 Sécurité
@@ -179,7 +190,9 @@ k3s-master (192.168.1.40) ← Subnet Router
 - ✅ **Chiffrement WireGuard** : Tout le trafic est chiffré end-to-end
 - ✅ **Authentification** : Chaque membre doit être autorisé dans Tailscale admin
 - ✅ **Pas d'exposition publique** : Aucun port ouvert sur Internet
-- ✅ **Subnet routing sécurisé** : Seul le réseau K3s (192.168.1.0/24) est exposé
+- ✅ **Routes spécifiques uniquement** : Seuls les 3 nodes K3s sont exposés (192.168.1.40-42)
+- ✅ **Isolation réseau** : Le reste du réseau local (192.168.1.x) n'est PAS accessible
+- ✅ **Principe du moindre privilège** : Accès minimal nécessaire pour le projet
 
 ## 📝 Gestion des accès (Admin)
 
@@ -199,9 +212,12 @@ k3s-master (192.168.1.40) ← Subnet Router
 
 ## ⚠️ Notes importantes
 
-1. **Point de défaillance unique** : Si le master (192.168.1.40) tombe, l'accès Tailscale est coupé
-2. **Performance** : Tout le trafic passe par le master (peut être un goulot d'étranglement)
-3. **Alternative future** : Installer Tailscale sur les 3 nodes pour plus de résilience
+1. **Sécurité renforcée** : Seuls les 3 nodes K3s (192.168.1.40-42) sont accessibles via Tailscale
+   - Ton box, NAS, imprimantes, autres VMs restent inaccessibles
+   - Principe du moindre privilège appliqué
+2. **Point de défaillance unique** : Si le master (192.168.1.40) tombe, l'accès Tailscale est coupé
+3. **Performance** : Tout le trafic passe par le master (peut être un goulot d'étranglement)
+4. **Alternative future** : Installer Tailscale sur les 3 nodes pour plus de résilience
 
 ## 🔗 Ressources
 
