@@ -9,7 +9,7 @@ spec:
   project: devboard
   
   source:
-    repoURL: https://hashicorp.github.io/vault-helm
+    repoURL: https://helm.releases.hashicorp.com
     targetRevision: 0.28.1
     chart: vault
     helm:
