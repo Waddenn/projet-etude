@@ -15,7 +15,7 @@ DevBoard est une plateforme de gestion de projets pour ESN, servant de support �
 | Conteneurisation | Docker (multi-stage) |
 | Orchestration | K3s (Kubernetes certifié CNCF) |
 | Monitoring | Prometheus + Grafana |
-| Logs | Loki + Promtail (+ démo ELK) |
+| Logs | Loki + Promtail |
 | Sécurité | Trivy, HashiCorp Vault, RBAC K8s |
 | IaC | Terraform + Ansible |
 | Chaos Engineering | LitmusChaos |
@@ -25,8 +25,8 @@ DevBoard est une plateforme de gestion de projets pour ESN, servant de support �
 ```bash
 # Prérequis : Docker, Go 1.22+, Node 20+
 
-# Setup initial
-./scripts/setup-local.sh
+# Setup initial (génère les secrets + installe les dépendances)
+make setup
 
 # Lancer tous les services
 make up
@@ -49,9 +49,8 @@ make build         # Construire les images Docker
 make test          # Lancer les tests
 make lint          # Linter le code
 make scan          # Scanner les images avec Trivy
-make deploy-dev    # Déployer en environnement dev (K8s)
 make benchmark     # Lancer un test de charge
-make elk-up        # Démarrer la stack ELK (démo)
+make infra-up      # Déployer le cluster K3s complet
 ```
 
 ## Architecture
@@ -88,14 +87,13 @@ make elk-up        # Démarrer la stack ELK (démo)
 ```
 ├── app/backend/       API Go (Gin)
 ├── app/frontend/      React (Vite)
-├── infra/terraform/   Provisionnement VMs
+├── infra/terraform/   Provisionnement LXC (Proxmox)
 ├── infra/ansible/     Installation K3s et outils
-├── k8s/               Manifestes Kubernetes (Kustomize)
 ├── helm/devboard/     Chart Helm
-├── monitoring/        Grafana, Prometheus, Loki, ELK demo
+├── argocd/            Définitions ArgoCD (GitOps)
+├── monitoring/        Règles Prometheus
 ├── security/          Vault, Trivy, RBAC
 ├── chaos/             Scénarios LitmusChaos
-├── scripts/           Scripts utilitaires
 ├── docs/              Documentation et ADR
 └── .github/workflows/ Pipeline CI/CD
 ```

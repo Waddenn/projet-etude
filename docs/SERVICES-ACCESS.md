@@ -88,6 +88,18 @@ Ajouter dans `/etc/hosts` (Linux/Mac) ou `C:\Windows\System32\drivers\etc\hosts`
 - `secret/devboard/db` → Credentials PostgreSQL
 - `secret/devboard/jwt` → Secret JWT pour l'authentification
 
+### Base de données PostgreSQL
+- **Host** : `devboard-postgres` (interne K8s)
+- **Port** : `5432`
+- **Database** : `devboard`
+- **Username** : `devboard`
+- **Password** : `<voir .env.secrets>`
+
+```bash
+# Connexion depuis un pod
+kubectl exec -it <postgres-pod> -n devboard-dev -- psql -U devboard -d devboard
+```
+
 ---
 
 ## Infrastructure K3s

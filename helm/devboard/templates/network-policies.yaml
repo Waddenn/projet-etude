@@ -1,20 +1,19 @@
+{{- if .Values.networkPolicies.enabled }}
 # Default deny all ingress
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: default-deny-ingress
-  namespace: devboard
 spec:
   podSelector: {}
   policyTypes:
     - Ingress
 ---
-# Frontend: accept from ingress only
+# Frontend: accept from ingress controller
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-frontend-ingress
-  namespace: devboard
 spec:
   podSelector:
     matchLabels:
@@ -28,7 +27,6 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-backend-from-frontend
-  namespace: devboard
 spec:
   podSelector:
     matchLabels:
@@ -46,7 +44,6 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-postgres-from-backend
-  namespace: devboard
 spec:
   podSelector:
     matchLabels:
@@ -58,3 +55,4 @@ spec:
               component: backend
       ports:
         - port: 5432
+{{- end }}

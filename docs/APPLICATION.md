@@ -381,15 +381,11 @@ Les credentials sont stockés dans **Vault** :
 ```bash
 # Lire les secrets depuis Vault
 export VAULT_ADDR=http://vault.devboard.local
-export VAULT_TOKEN=root
+export VAULT_TOKEN=<voir .env.secrets → VAULT_DEV_ROOT_TOKEN>
 vault kv get secret/devboard/db
 
-# Résultat :
-# username: devboard
-# password: devboard-secret
-# host: postgres
-# port: 5432
-# database: devboard
+# Les valeurs sont générées par make generate-secrets
+# et stockées dans .env.secrets (git-ignored)
 ```
 
 ### 🚀 Initialisation
@@ -440,7 +436,7 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_USER: devboard
-      POSTGRES_PASSWORD: devboard
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: devboard
     volumes:
       - postgres-data:/var/lib/postgresql/data

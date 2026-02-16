@@ -90,7 +90,7 @@ Une fois Tailscale connecté :
 | **Grafana** | http://grafana.devboard.local | admin / prom-operator |
 | **Prometheus** | http://prometheus.devboard.local | - |
 | **Alertmanager** | http://alertmanager.devboard.local | - |
-| **Vault** | http://vault.devboard.local | Token: root |
+| **Vault** | http://vault.devboard.local | Token: `<voir .env.secrets>` |
 
 ### 4. SSH sur les nodes K3s
 

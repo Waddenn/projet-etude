@@ -2,6 +2,9 @@
 proxmox_endpoint = "https://192.168.1.1:8006"
 proxmox_node     = "proxade"
 
+# SSH host for LXC config patching (null_resource)
+proxmox_ssh_host = "192.168.1.1"
+
 # Auth: password-based (required for privileged LXC with feature flags)
 proxmox_username = "root@pam"
 # Set password via environment variable:

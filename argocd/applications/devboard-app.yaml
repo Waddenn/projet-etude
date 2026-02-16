@@ -15,6 +15,13 @@ spec:
     helm:
       valueFiles:
         - values-dev.yaml
+      # Secrets are injected by bootstrap-argocd.yml from .env.secrets
+      # Placeholders __DB_PASSWORD__ and __JWT_SECRET__ are replaced at deploy time
+      parameters:
+        - name: secrets.dbPassword
+          value: "__DB_PASSWORD__"
+        - name: secrets.jwtSecret
+          value: "__JWT_SECRET__"
   
   destination:
     server: https://kubernetes.default.svc

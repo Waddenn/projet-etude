@@ -1,0 +1,95 @@
+---
+# ─────────────────────────────────────────────────────────────────
+# Prepare LXC containers for K3s (run on the containers themselves)
+# Fixes: /dev/kmsg, kernel modules, sysctl, persistence
+#
+# Usage:
+#   ansible-playbook -i inventory/dev.yml playbooks/prepare-lxc-k3s.yml
+# ─────────────────────────────────────────────────────────────────
+
+- name: Prepare LXC containers for K3s
+  hosts: all
+  tasks:
+    # ─── /dev/kmsg fix (required by kubelet) ─────────────────────
+    - name: Create /dev/kmsg symlink
+      file:
+        src: /dev/console
+        dest: /dev/kmsg
+        state: link
+        force: true
+
+    - name: Create systemd service to persist /dev/kmsg on boot
+      copy:
+        dest: /etc/systemd/system/kmsg-fix.service
+        content: |
+          [Unit]
+          Description=Create /dev/kmsg symlink for K3s
+          DefaultDependencies=no
+          Before=k3s.service k3s-agent.service
+          ConditionPathExists=!/dev/kmsg
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/ln -sf /dev/console /dev/kmsg
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=sysinit.target
+        mode: "0644"
+
+    - name: Enable kmsg-fix service
+      systemd:
+        name: kmsg-fix
+        enabled: true
+        daemon_reload: true
+
+    # ─── Kernel modules ──────────────────────────────────────────
+    - name: Load required kernel modules
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+      ignore_errors: true
+
+    - name: Persist kernel modules
+      copy:
+        dest: /etc/modules-load.d/k3s.conf
+        content: |
+          overlay
+          br_netfilter
+        mode: "0644"
+
+    # ─── Sysctl for K3s networking ───────────────────────────────
+    - name: Set sysctl parameters for K3s
+      sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_file: /etc/sysctl.d/99-k3s.conf
+        reload: true
+      loop:
+        - { key: "net.bridge.bridge-nf-call-iptables", value: "1" }
+        - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+        - { key: "net.ipv4.ip_forward", value: "1" }
+      ignore_errors: true
+
+    # ─── Install prerequisites ───────────────────────────────────
+    - name: Install K3s prerequisites
+      apt:
+        name:
+          - curl
+          - ca-certificates
+          - open-iscsi
+          - apparmor
+          - iptables
+          - conntrack
+        state: present
+        update_cache: true
+
+    - name: Ensure apparmor is started
+      systemd:
+        name: apparmor
+        state: started
+        enabled: true
+      ignore_errors: true

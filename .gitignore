@@ -1,3 +1,21 @@
 .claude
 node_modules
 secrets.auto.tfvars
+
+# ─── Secrets (NEVER commit) ──────────────────────────────────
+.env.secrets
+*.secrets
+infra/ansible/argocd-credentials.txt
+
+# ─── Terraform ───────────────────────────────────────────────
+infra/terraform/terraform.tfvars
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
+infra/terraform/.terraform/
+infra/terraform/.terraform.lock.hcl
+
+# ─── Ansible ─────────────────────────────────────────────────
+infra/ansible/kubeconfig.yaml
+
+# ─── Local dev ───────────────────────────────────────────────
+.env

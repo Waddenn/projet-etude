@@ -20,4 +20,4 @@ Nous utilisons **Loki + Promtail** comme solution de logs principale, et déploy
 
 ## Conséquences
 - Le rapport Green IT inclura un comparatif chiffré Loki vs ELK (RAM, CPU, temps de démarrage).
-- L'instance ELK demo est lancée uniquement pour les démonstrations via `make elk-up`.
+- Le comparatif ELK vs Loki est documenté dans le rapport Green IT (l'instance ELK demo a été supprimée par souci de minimalisme).
