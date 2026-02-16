@@ -1,11 +1,12 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ .Release.Name }}-postgres
   labels:
     app: devboard
     component: postgres
 spec:
+  serviceName: {{ .Release.Name }}-postgres
   replicas: 1
   selector:
     matchLabels:
@@ -17,6 +18,8 @@ spec:
         app: devboard
         component: postgres
     spec:
+      securityContext:
+        fsGroup: 999  # ID du groupe postgres
       containers:
         - name: postgres
           image: {{ .Values.postgres.image | default "postgres:16-alpine" }}
@@ -43,10 +46,24 @@ spec:
           resources:
             {{- toYaml .Values.postgres.resources | nindent 12 }}
           {{- end }}
-      volumes:
-        - name: postgres-data
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-postgres-pvc
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "$(POSTGRES_USER)"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "$(POSTGRES_USER)"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.postgres.storage | default "1Gi" }}
 ---
 apiVersion: v1
 kind: Service
@@ -60,14 +77,4 @@ spec:
     - port: 5432
       targetPort: postgres
       name: postgres
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ .Release.Name }}-postgres-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: {{ .Values.postgres.storage | default "1Gi" }}
+  clusterIP: None # Headless service for StatefulSet

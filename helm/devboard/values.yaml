@@ -44,6 +44,11 @@ ingress:
   enabled: true
   host: devboard.local
   extraHosts: []
+  email: admin@devboard.local
+  tls:
+    enabled: true
+    issuer: selfsigned-issuer
+
 
 networkPolicies:
   enabled: true
