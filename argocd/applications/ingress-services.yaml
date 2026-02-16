@@ -13,7 +13,7 @@ spec:
     targetRevision: main
     path: k8s
     directory:
-      include: '{monitoring-ingress.yaml,vault-ingress.yaml}'
+      include: '{ingress-argocd.yaml,monitoring-ingress.yaml,vault-ingress.yaml}'
   
   destination:
     server: https://kubernetes.default.svc
