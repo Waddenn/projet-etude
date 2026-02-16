@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: devboard
+  namespace: argocd
+spec:
+  description: DevBoard Project - Full Stack Application with Monitoring and Security
+  
+  # Source repositories
+  sourceRepos:
+    - 'https://github.com/Waddenn/projet-etude.git'
+    - 'https://prometheus-community.github.io/helm-charts'
+    - 'https://grafana.github.io/helm-charts'
+    - 'https://hashicorp.github.io/vault-helm'
+  
+  # Destination clusters
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+      name: in-cluster
+  
+  # Allowed cluster resources
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  
+  # Namespace resources
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

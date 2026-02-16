@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: devboard
+  
+  source:
+    repoURL: https://hashicorp.github.io/vault-helm
+    targetRevision: 0.28.1
+    chart: vault
+    helm:
+      values: |
+        server:
+          dev:
+            enabled: true
+            devRootToken: "root"
+          
+          ingress:
+            enabled: false
+          
+          dataStorage:
+            enabled: false
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: security
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
