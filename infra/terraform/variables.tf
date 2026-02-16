@@ -48,13 +48,13 @@ variable "ssh_public_key_path" {
 variable "bridge" {
   description = "Proxmox network bridge"
   type        = string
-  default     = "VLAN40"
+  default     = "vmbr0"
 }
 
 variable "gateway" {
   description = "Network gateway"
   type        = string
-  default     = "192.168.40.254"
+  default     = "192.168.1.254"
 }
 
 variable "dns_servers" {
@@ -88,7 +88,7 @@ variable "server_vmid" {
 variable "server_ip" {
   description = "IP address for K3s server"
   type        = string
-  default     = "192.168.40.40"
+  default     = "192.168.1.40"
 }
 
 variable "server_cpu" {
@@ -120,7 +120,7 @@ variable "agent_vmid_start" {
 variable "agent_ips" {
   description = "IP addresses for K3s agents"
   type        = list(string)
-  default     = ["192.168.40.41", "192.168.40.42"]
+  default     = ["192.168.1.41", "192.168.1.42"]
 }
 
 variable "agent_cpu" {
