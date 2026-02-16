@@ -1,0 +1,7 @@
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfplan
+# Uncomment if you set secrets directly in tfvars:
+# terraform.tfvars

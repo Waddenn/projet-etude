@@ -75,22 +75,40 @@ helm-install: ## Install with Helm (dev)
 helm-install-prod: ## Install with Helm (prod)
 	helm upgrade --install devboard helm/devboard/ -f helm/devboard/values-prod.yaml -n devboard-prod --create-namespace
 
-# ─── Infrastructure ───────────────────────────────────────────
+# ─── Proxmox Infrastructure ──────────────────────────────────
+
+infra-up: ## Deploy full K3s infra on Proxmox (Terraform + Ansible)
+	./scripts/infra-up.sh
+
+infra-down: ## Destroy K3s infra on Proxmox
+	./scripts/infra-down.sh
 
 infra-init: ## Initialize Terraform
 	cd infra/terraform && terraform init
 
-infra-plan: ## Plan Terraform changes
+infra-plan: ## Plan Terraform changes (preview LXC creation)
 	cd infra/terraform && terraform plan
 
-infra-apply: ## Apply Terraform changes
+infra-apply: ## Apply Terraform changes (create LXC on Proxmox)
 	cd infra/terraform && terraform apply
+
+infra-destroy: ## Destroy Terraform resources (remove LXC from Proxmox)
+	cd infra/terraform && terraform destroy
 
 ansible-k3s: ## Install K3s via Ansible
 	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/install-k3s.yml
 
-ansible-tools: ## Deploy tools via Ansible
+ansible-tools: ## Deploy tools via Ansible (Prometheus, Grafana, Vault...)
 	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/deploy-tools.yml
+
+ssh-server: ## SSH into K3s server
+	ssh root@192.168.1.40
+
+ssh-agent1: ## SSH into K3s agent 1
+	ssh root@192.168.1.41
+
+ssh-agent2: ## SSH into K3s agent 2
+	ssh root@192.168.1.42
 
 # ─── ELK Demo ─────────────────────────────────────────────────
 

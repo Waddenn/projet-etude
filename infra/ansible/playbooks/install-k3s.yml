@@ -1,14 +1,34 @@
 ---
+- name: Prepare LXC containers for K3s
+  hosts: all
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - ca-certificates
+          - open-iscsi
+          - apparmor
+        state: present
+        update_cache: true
+
+    - name: Ensure apparmor is started
+      systemd:
+        name: apparmor
+        state: started
+        enabled: true
+      ignore_errors: true
+
 - name: Install K3s server
   hosts: k3s_server
-  become: true
   tasks:
     - name: Install K3s server
       shell: |
         curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version }} sh -s - server \
           --write-kubeconfig-mode 644 \
-          --disable traefik \
-          --tls-san {{ ansible_host }}
+          --tls-san {{ ansible_host }} \
+          --node-ip {{ ansible_host }} \
+          --flannel-iface eth0
       args:
         creates: /usr/local/bin/k3s
 
@@ -34,14 +54,30 @@
         dest: "{{ playbook_dir }}/../kubeconfig.yaml"
         flat: true
 
+    - name: Fix kubeconfig server address
+      local_action:
+        module: replace
+        path: "{{ playbook_dir }}/../kubeconfig.yaml"
+        regexp: 'https://127.0.0.1:6443'
+        replace: "https://{{ ansible_host }}:6443"
+
 - name: Install K3s agents
   hosts: k3s_agents
-  become: true
   tasks:
     - name: Install K3s agent
       shell: |
         curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version }} sh -s - agent \
           --server https://{{ hostvars[groups['k3s_server'][0]]['ansible_host'] }}:6443 \
-          --token {{ hostvars[groups['k3s_server'][0]]['k3s_token'] }}
+          --token {{ hostvars[groups['k3s_server'][0]]['k3s_token'] }} \
+          --node-ip {{ ansible_host }} \
+          --flannel-iface eth0
       args:
         creates: /usr/local/bin/k3s-agent
+
+    - name: Wait for agent to join
+      delegate_to: "{{ groups['k3s_server'][0] }}"
+      shell: k3s kubectl get nodes | grep {{ inventory_hostname }}
+      register: agent_joined
+      until: agent_joined.rc == 0
+      retries: 30
+      delay: 10
