@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devboard-app
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: backend=ghcr.io/waddenn/projet-etude/backend, frontend=ghcr.io/waddenn/projet-etude/frontend
+    argocd-image-updater.argoproj.io/backend.update-strategy: latest
+    argocd-image-updater.argoproj.io/frontend.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: git
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: devboard
+  source:
+    repoURL: https://github.com/Waddenn/projet-etude.git
+    targetRevision: main
+    path: helm/devboard
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: secrets.dbPassword
+          value: "__DB_PASSWORD__"
+        - name: secrets.jwtSecret
+          value: "__JWT_SECRET__"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
