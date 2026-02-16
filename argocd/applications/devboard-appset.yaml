@@ -9,13 +9,13 @@ spec:
         elements:
           - env: dev
             namespace: devboard-dev
-            revision: develop
+            revision: main # Temporairement main au lieu de develop
           - env: staging
             namespace: devboard-staging
             revision: main
           - env: prod
             namespace: devboard-prod
-            revision: main # ou un tag spécifique via un autre générateur
+            revision: main
   template:
     metadata:
       name: '{{env}}-devboard-app'
