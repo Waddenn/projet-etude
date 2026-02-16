@@ -5,14 +5,14 @@
 ### Configuration requise sur votre machine
 Ajouter dans `/etc/hosts` (Linux/Mac) ou `C:\Windows\System32\drivers\etc\hosts` (Windows) :
 ```
-192.168.40.40 dev.devboard.local
-192.168.40.40 grafana.devboard.local
-192.168.40.40 prometheus.devboard.local
-192.168.40.40 alertmanager.devboard.local
-192.168.40.40 vault.devboard.local
+192.168.1.40 dev.devboard.local
+192.168.1.40 grafana.devboard.local
+192.168.1.40 prometheus.devboard.local
+192.168.1.40 alertmanager.devboard.local
+192.168.1.40 vault.devboard.local
 ```
 
-**Note** : Vous pouvez utiliser n'importe quelle IP des nœuds (192.168.40.40, .41 ou .42)
+**Note** : Vous pouvez utiliser n'importe quelle IP des nœuds (192.168.1.40, .41 ou .42)
 
 ---
 
@@ -92,9 +92,9 @@ Ajouter dans `/etc/hosts` (Linux/Mac) ou `C:\Windows\System32\drivers\etc\hosts`
 
 ## Infrastructure K3s
 - **Cluster** : 3 nœuds (1 server + 2 agents)
-- **IP K3s Server** : `192.168.40.40`
-- **IP K3s Agent 1** : `192.168.40.41`
-- **IP K3s Agent 2** : `192.168.40.42`
+- **IP K3s Server** : `192.168.1.40`
+- **IP K3s Agent 1** : `192.168.1.41`
+- **IP K3s Agent 2** : `192.168.1.42`
 
 ### Pods et services internes
 ```bash
@@ -128,11 +128,11 @@ kubectl get pods -n devboard-dev
 
 ```bash
 # Server
-ssh root@192.168.40.40
+ssh root@192.168.1.40
 
 # Agents
-ssh root@192.168.40.41
-ssh root@192.168.40.42
+ssh root@192.168.1.41
+ssh root@192.168.1.42
 ```
 
 ## Kubeconfig
@@ -146,7 +146,7 @@ kubectl get pods -A
 
 Ou directement sur le serveur K3s :
 ```bash
-ssh root@192.168.40.40
+ssh root@192.168.1.40
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 kubectl get nodes
 ```

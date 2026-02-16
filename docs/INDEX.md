@@ -108,7 +108,7 @@ kubectl get pods -n devboard-dev
 
 ```bash
 # Ajouter dans /etc/hosts
-192.168.40.40 dev.devboard.local grafana.devboard.local prometheus.devboard.local
+192.168.1.40 dev.devboard.local grafana.devboard.local prometheus.devboard.local
 
 # URLs
 http://dev.devboard.local          # DevBoard app

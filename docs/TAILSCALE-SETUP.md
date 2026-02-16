@@ -6,11 +6,11 @@ Permettre à l'équipe d'accéder aux services du cluster K3s (Grafana, Promethe
 
 ## 📦 Installation effectuée
 
-### Sur le node master K3s (192.168.40.40)
+### Sur le node master K3s (192.168.1.40)
 
 ✅ Tailscale installé en mode **Subnet Router**
-- Expose **uniquement les 3 nodes K3s** : `192.168.40.40/32`, `192.168.40.41/32`, `192.168.40.42/32`
-- **Sécurisé** : Le reste du réseau 192.168.40.x n'est PAS accessible
+- Expose **uniquement les 3 nodes K3s** : `192.168.1.40/32`, `192.168.1.41/32`, `192.168.1.42/32`
+- **Sécurisé** : Le reste du réseau 192.168.1.x n'est PAS accessible
 - Permet l'accès aux 3 nodes K3s + tous les services déployés dessus
 
 ### Configuration système
@@ -28,10 +28,10 @@ net.ipv6.conf.all.forwarding = 1
 
 ### 1. Authentifier le node master
 
-**Sur le master (192.168.40.40)** :
+**Sur le master (192.168.1.40)** :
 
 ```bash
-tailscale up --advertise-routes=192.168.40.40/32,192.168.40.41/32,192.168.40.42/32 \
+tailscale up --advertise-routes=192.168.1.40/32,192.168.1.41/32,192.168.1.42/32 \
              --accept-routes \
              --hostname=k3s-master
 ```
@@ -48,9 +48,9 @@ https://login.tailscale.com/a/XXXXXXXX
 3. Cliquer sur les `...` (menu)
 4. Sélectionner **"Edit route settings..."**
 5. **Approuver** les 3 routes :
-   - ✅ `192.168.40.40/32` (master)
-   - ✅ `192.168.40.41/32` (agent-1)
-   - ✅ `192.168.40.42/32` (agent-2)
+   - ✅ `192.168.1.40/32` (master)
+   - ✅ `192.168.1.41/32` (agent-1)
+   - ✅ `192.168.1.42/32` (agent-2)
 6. Cliquer sur **"Save"**
 
 ✅ Le subnet routing est maintenant actif !
@@ -75,7 +75,7 @@ tailscale up
 Ajouter ces lignes à `/etc/hosts` (ou `C:\Windows\System32\drivers\etc\hosts` sur Windows) :
 
 ```
-192.168.40.40 devboard.local argocd.devboard.local grafana.devboard.local prometheus.devboard.local vault.devboard.local alertmanager.devboard.local
+192.168.1.40 devboard.local argocd.devboard.local grafana.devboard.local prometheus.devboard.local vault.devboard.local alertmanager.devboard.local
 ```
 
 ### 3. Accéder aux services
@@ -96,11 +96,11 @@ Une fois Tailscale connecté :
 
 ```bash
 # Node master
-ssh root@192.168.40.40
+ssh root@192.168.1.40
 
 # Agents
-ssh root@192.168.40.41
-ssh root@192.168.40.42
+ssh root@192.168.1.41
+ssh root@192.168.1.42
 ```
 
 ## 🔍 Vérification
@@ -115,7 +115,7 @@ tailscale status
 tailscale status --json | jq '.Peer[].Hostinfo.RoutableIPs'
 
 # Ping le master via Tailscale
-ping 192.168.40.40
+ping 192.168.1.40
 ```
 
 ### Tester les services
@@ -136,16 +136,16 @@ curl -I http://argocd.devboard.local
 
 ## 🛠️ Dépannage
 
-### Impossible de joindre 192.168.40.40-42
+### Impossible de joindre 192.168.1.40-42
 
 **Problème** : Routes spécifiques non activées
 
 **Solution** :
 1. Vérifier sur https://login.tailscale.com/admin/machines
 2. Vérifier que `k3s-master` a bien les 3 routes **approved** :
-   - 192.168.40.40/32
-   - 192.168.40.41/32
-   - 192.168.40.42/32
+   - 192.168.1.40/32
+   - 192.168.1.41/32
+   - 192.168.1.42/32
 
 ### Services inaccessibles
 
@@ -153,13 +153,13 @@ curl -I http://argocd.devboard.local
 
 **Solution** :
 1. Vérifier `/etc/hosts` sur votre machine locale
-2. Essayer avec l'IP directement : http://192.168.40.40
+2. Essayer avec l'IP directement : http://192.168.1.40
 
 ### Tailscale déconnecté
 
 ```bash
 # Sur le master
-ssh root@192.168.40.40
+ssh root@192.168.1.40
 systemctl status tailscaled
 tailscale status
 
@@ -174,14 +174,14 @@ Internet
    ↓
 [Tailscale VPN] ← Chaque membre de l'équipe
    ↓
-k3s-master (192.168.40.40) ← Subnet Router (routes spécifiques uniquement)
+k3s-master (192.168.1.40) ← Subnet Router (routes spécifiques uniquement)
    ↓
-   ├─→ 192.168.40.40/32 (master)  ← Grafana, Prometheus, ArgoCD, Vault
-   ├─→ 192.168.40.41/32 (agent-1)
-   └─→ 192.168.40.42/32 (agent-2)
+   ├─→ 192.168.1.40/32 (master)  ← Grafana, Prometheus, ArgoCD, Vault
+   ├─→ 192.168.1.41/32 (agent-1)
+   └─→ 192.168.1.42/32 (agent-2)
 
 ⚠️ Note importante : Seuls les 3 nodes K3s sont exposés.
-Le reste du réseau 192.168.40.x (box, NAS, imprimantes, etc.) 
+Le reste du réseau 192.168.1.x (box, NAS, imprimantes, etc.) 
 reste inaccessible via Tailscale → Sécurité renforcée !
 ```
 
@@ -190,8 +190,8 @@ reste inaccessible via Tailscale → Sécurité renforcée !
 - ✅ **Chiffrement WireGuard** : Tout le trafic est chiffré end-to-end
 - ✅ **Authentification** : Chaque membre doit être autorisé dans Tailscale admin
 - ✅ **Pas d'exposition publique** : Aucun port ouvert sur Internet
-- ✅ **Routes spécifiques uniquement** : Seuls les 3 nodes K3s sont exposés (192.168.40.40-42)
-- ✅ **Isolation réseau** : Le reste du réseau local (192.168.40.x) n'est PAS accessible
+- ✅ **Routes spécifiques uniquement** : Seuls les 3 nodes K3s sont exposés (192.168.1.40-42)
+- ✅ **Isolation réseau** : Le reste du réseau local (192.168.1.x) n'est PAS accessible
 - ✅ **Principe du moindre privilège** : Accès minimal nécessaire pour le projet
 
 ## 📝 Gestion des accès (Admin)
@@ -201,7 +201,7 @@ reste inaccessible via Tailscale → Sécurité renforcée !
 1. Aller sur https://login.tailscale.com/admin/settings/users
 2. Inviter par email
 3. Le membre installe Tailscale et se connecte
-4. Il a automatiquement accès au subnet 192.168.40.0/24
+4. Il a automatiquement accès au subnet 192.168.1.0/24
 
 ### Révoquer un accès
 
@@ -212,10 +212,10 @@ reste inaccessible via Tailscale → Sécurité renforcée !
 
 ## ⚠️ Notes importantes
 
-1. **Sécurité renforcée** : Seuls les 3 nodes K3s (192.168.40.40-42) sont accessibles via Tailscale
+1. **Sécurité renforcée** : Seuls les 3 nodes K3s (192.168.1.40-42) sont accessibles via Tailscale
    - Ton box, NAS, imprimantes, autres VMs restent inaccessibles
    - Principe du moindre privilège appliqué
-2. **Point de défaillance unique** : Si le master (192.168.40.40) tombe, l'accès Tailscale est coupé
+2. **Point de défaillance unique** : Si le master (192.168.1.40) tombe, l'accès Tailscale est coupé
 3. **Performance** : Tout le trafic passe par le master (peut être un goulot d'étranglement)
 4. **Alternative future** : Installer Tailscale sur les 3 nodes pour plus de résilience
 
