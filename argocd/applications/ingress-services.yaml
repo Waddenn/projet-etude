@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ingress-services
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: devboard
+  
+  source:
+    repoURL: https://github.com/Waddenn/projet-etude.git
+    targetRevision: main
+    path: k8s
+    directory:
+      include: '{monitoring-ingress.yaml,vault-ingress.yaml}'
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring  # Will be overridden per resource
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
