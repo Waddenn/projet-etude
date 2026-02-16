@@ -11,7 +11,7 @@ spec:
     - 'https://github.com/Waddenn/projet-etude.git'
     - 'https://prometheus-community.github.io/helm-charts'
     - 'https://grafana.github.io/helm-charts'
-    - 'https://hashicorp.github.io/vault-helm'
+    - 'https://helm.releases.hashicorp.com'
   
   # Destination clusters
   destinations:
