@@ -1,16 +1,45 @@
 backend:
+  image:
+    repository: docker.io/library/devboard-backend
+    tag: latest
+    pullPolicy: Never
   replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
   hpa:
     enabled: false
 
 frontend:
+  image:
+    repository: docker.io/library/devboard-frontend
+    tag: latest
+    pullPolicy: Never
   replicas: 1
+  resources:
+    requests:
+      cpu: 25m
+      memory: 16Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
 
 postgres:
+  image: postgres:16-alpine
   storage: 1Gi
 
 ingress:
+  enabled: true
   host: dev.devboard.local
+
+secrets:
+  dbUsername: devboard
+  dbPassword: devboard-secret
+  jwtSecret: changeme-jwt-secret-minimum-32-chars
 
 networkPolicies:
   enabled: false

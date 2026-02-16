@@ -2,14 +2,13 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
-    tags: ['v*']
+    tags: ['v*']  # Only build on version tags
   pull_request:
     branches: [main, develop]
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository }}
+  IMAGE_PREFIX: ${{ github.repository_owner }}/projet-etude
 
 jobs:
   # ─── Lint ─────────────────────────────────────────────────────

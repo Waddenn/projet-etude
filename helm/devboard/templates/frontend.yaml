@@ -20,9 +20,13 @@ spec:
       containers:
         - name: frontend
           image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy | default "IfNotPresent" }}
           ports:
             - containerPort: 80
               name: http
+          env:
+            - name: BACKEND_HOST
+              value: "{{ .Release.Name }}-backend"
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
 ---
