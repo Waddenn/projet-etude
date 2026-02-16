@@ -14,6 +14,7 @@ postgres:
 
 ingress:
   host: devboard.local
+  extraHosts: []
 
 networkPolicies:
   enabled: true

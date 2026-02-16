@@ -122,7 +122,7 @@ infra/ansible/
 all:
   vars:
     ansible_user: root
-    ansible_ssh_private_key_file: ~/.ssh/id_rsa
+    # SSH auth via agent (Bitwarden SSH agent)
     k3s_version: v1.31.4+k3s1
 
   children:

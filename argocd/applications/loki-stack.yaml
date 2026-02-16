@@ -22,6 +22,10 @@ spec:
         
         promtail:
           enabled: true
+
+        datasource:
+          enabled: true
+          isDefaultDatasource: false
         
         grafana:
           enabled: false  # Already deployed with prometheus-stack
@@ -29,6 +33,7 @@ spec:
             datasources:
               enabled: true
               defaultDatasourceEnabled: false  # Don't mark Loki as default
+              isDefaultDatasource: false
   
   destination:
     server: https://kubernetes.default.svc

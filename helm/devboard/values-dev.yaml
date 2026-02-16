@@ -35,6 +35,8 @@ postgres:
 ingress:
   enabled: true
   host: dev.devboard.local
+  extraHosts:
+    - devboard.local
 
 # ─── Secrets ─────────────────────────────────────────────────────
 # DO NOT put real passwords here (committed to Git).

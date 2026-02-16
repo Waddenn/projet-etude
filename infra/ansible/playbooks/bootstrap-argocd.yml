@@ -10,6 +10,8 @@
 - name: Bootstrap ArgoCD on K3s cluster
   hosts: k3s_server
   become: true
+  vars_files:
+    - "{{ playbook_dir }}/../group_vars/all.yml"
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   # vars: argocd_version, argocd_namespace, project_repo → group_vars/all.yml
@@ -39,14 +41,26 @@
       delay: 10
 
     # ─── Configure ArgoCD ────────────────────────────────────────
-    - name: Disable TLS on ArgoCD server (behind Traefik)
-      shell: |
-        kubectl patch deployment argocd-server -n {{ argocd_namespace }} \
-          --type='json' \
-          -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--insecure"}]'
-      register: patch_result
+    - name: Read ArgoCD insecure mode
+      shell: kubectl get configmap argocd-cmd-params-cm -n {{ argocd_namespace }} -o jsonpath='{.data.server\.insecure}'
+      register: argocd_insecure_value
+      changed_when: false
       failed_when: false
-      changed_when: "'patched' in patch_result.stdout"
+
+    - name: Enable ArgoCD insecure mode behind Traefik
+      shell: |
+        kubectl patch configmap argocd-cmd-params-cm -n {{ argocd_namespace }} \
+          --type merge \
+          -p '{"data":{"server.insecure":"true"}}'
+      when: argocd_insecure_value.stdout != "true"
+
+    - name: Restart ArgoCD server after insecure mode change
+      shell: kubectl rollout restart deployment/argocd-server -n {{ argocd_namespace }}
+      when: argocd_insecure_value.stdout != "true"
+
+    - name: Wait for ArgoCD server rollout
+      shell: kubectl rollout status deployment/argocd-server -n {{ argocd_namespace }} --timeout=300s
+      when: argocd_insecure_value.stdout != "true"
 
     - name: Get ArgoCD initial admin password
       shell: kubectl -n {{ argocd_namespace }} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
@@ -62,7 +76,7 @@
     # ─── Deploy ArgoCD Project ───────────────────────────────────
     - name: Copy ArgoCD project definition
       copy:
-        src: "{{ playbook_dir }}/../../argocd/projects/devboard-project.yaml"
+        src: "{{ playbook_dir }}/../../../argocd/projects/devboard-project.yaml"
         dest: /tmp/argocd-project.yaml
 
     - name: Apply ArgoCD project
@@ -71,10 +85,11 @@
     # ─── Deploy ArgoCD Applications ──────────────────────────────
     - name: Copy ArgoCD application manifests
       copy:
-        src: "{{ playbook_dir }}/../../argocd/applications/"
+        src: "{{ playbook_dir }}/../../../argocd/applications/"
         dest: /tmp/argocd-apps/
 
     - name: Read secrets file
+      become: false
       local_action:
         module: slurp
         src: "{{ playbook_dir }}/../../../.env.secrets"
@@ -129,6 +144,7 @@
 
     # ─── Save credentials ────────────────────────────────────────
     - name: Save ArgoCD credentials locally
+      become: false
       local_action:
         module: copy
         content: |

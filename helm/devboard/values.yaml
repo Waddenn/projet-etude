@@ -43,6 +43,7 @@ postgres:
 ingress:
   enabled: true
   host: devboard.local
+  extraHosts: []
 
 networkPolicies:
   enabled: true
