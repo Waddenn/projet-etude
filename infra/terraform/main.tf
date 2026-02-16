@@ -50,8 +50,13 @@ resource "null_resource" "fix_lxc_config" {
     }
 
     inline = [
+      "echo '=== Loading kernel modules on Proxmox host ==='",
+      "modprobe overlay || true",
+      "modprobe br_netfilter || true",
+      "echo 'overlay' > /etc/modules-load.d/k3s.conf",
+      "echo 'br_netfilter' >> /etc/modules-load.d/k3s.conf",
+      "echo 'Kernel modules loaded'",
       "echo '=== Patching LXC configs for K3s compatibility ==='",
-      # Patch each container config
       "for VMID in ${var.server_vmid} ${join(" ", [for i in range(var.agent_count) : var.agent_vmid_start + i])}; do",
       "  CONF=/etc/pve/lxc/$${VMID}.conf",
       "  if ! grep -q 'lxc.apparmor.profile' $${CONF} 2>/dev/null; then",
@@ -62,14 +67,29 @@ resource "null_resource" "fix_lxc_config" {
       "    echo 'lxc.cap.drop: ' >> $${CONF}",
       "    echo \"Patched $${CONF}\"",
       "    pct stop $${VMID} || true",
-      "    sleep 2",
+      "    sleep 3",
       "    pct start $${VMID}",
       "    echo \"Restarted container $${VMID}\"",
       "  else",
       "    echo \"$${CONF} already patched, skipping\"",
       "  fi",
       "done",
-      "echo '=== LXC config patching complete ==='",
+      "echo '=== Waiting for containers to be SSH-ready ==='",
+      "for IP in ${var.server_ip} ${join(" ", var.agent_ips)}; do",
+      "  echo \"Checking SSH on $${IP}...\"",
+      "  for i in $(seq 1 30); do",
+      "    if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes root@$${IP} true 2>/dev/null; then",
+      "      echo \"  $${IP} is ready\"",
+      "      break",
+      "    fi",
+      "    if [ $${i} -eq 30 ]; then",
+      "      echo \"  $${IP} timeout after 90s\"",
+      "      exit 1",
+      "    fi",
+      "    sleep 3",
+      "  done",
+      "done",
+      "echo '=== All containers ready ==='",
     ]
   }
 }

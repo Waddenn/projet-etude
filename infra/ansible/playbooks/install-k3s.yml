@@ -9,6 +9,8 @@
 
 - name: Ensure LXC prerequisites (idempotent)
   hosts: k3s_server:k3s_agents
+  vars_files:
+    - "{{ playbook_dir }}/../group_vars/all.yml"
   tasks:
     - name: Verify /dev/kmsg exists
       stat:
@@ -36,6 +38,8 @@
 
 - name: Install K3s server
   hosts: k3s_server
+  vars_files:
+    - "{{ playbook_dir }}/../group_vars/all.yml"
   tasks:
     - name: Install K3s server
       shell: |
@@ -78,6 +82,8 @@
 
 - name: Install K3s agents
   hosts: k3s_agents
+  vars_files:
+    - "{{ playbook_dir }}/../group_vars/all.yml"
   tasks:
     - name: Install K3s agent
       shell: |

@@ -1,11 +1,8 @@
 ---
 # ─────────────────────────────────────────────────────────────────
 # Fix LXC configuration on Proxmox host for K3s compatibility
-# Must be run AFTER terraform apply and BEFORE install-k3s.yml
-#
-# This playbook SSHes into the Proxmox host and:
-#   1. Appends required LXC config lines (proc/sys rw, apparmor, caps)
-#   2. Restarts all K3s LXC containers
+# NOTE: Most of this is now handled by Terraform's null_resource.
+#       This playbook is kept for manual runs or re-applying config.
 #
 # Usage:
 #   ansible-playbook -i inventory/dev.yml playbooks/fix-lxc-config.yml
@@ -15,7 +12,7 @@
   hosts: proxmox
   gather_facts: false
   vars:
-    lxc_vmids: "{{ groups['all'] | map('extract', hostvars, 'vmid') | list }}"
+    lxc_vmids: "{{ (groups['k3s_server'] + groups['k3s_agents']) | map('extract', hostvars, 'vmid') | list }}"
 
   tasks:
     - name: Gather LXC VMIDs from inventory
@@ -42,7 +39,7 @@
       register: lxc_patched
 
     - name: Restart patched LXC containers
-      shell: "pct stop {{ item.item.item }} && sleep 2 && pct start {{ item.item.item }}"
+      shell: "pct stop {{ item.item.item }} && sleep 3 && pct start {{ item.item.item }}"
       loop: "{{ lxc_patched.results | default([]) }}"
       when: item is changed
 
@@ -55,3 +52,20 @@
       loop: "{{ groups['k3s_server'] + groups['k3s_agents'] }}"
       delegate_to: localhost
       when: lxc_patched is changed
+
+    # ─── Load kernel modules on Proxmox host ─────────────────────
+    - name: Load required kernel modules on Proxmox host
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: Persist kernel modules on Proxmox host
+      copy:
+        dest: /etc/modules-load.d/k3s.conf
+        content: |
+          overlay
+          br_netfilter
+        mode: "0644"

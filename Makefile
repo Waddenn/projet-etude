@@ -66,6 +66,10 @@ scan: scan-backend scan-frontend ## Scan all images
 
 # ─── Infrastructure ──────────────────────────────────────────
 
+# Export Terraform-sensitive vars from .env.secrets
+export TF_VAR_proxmox_password  ?= $(shell grep '^PROXMOX_PASSWORD=' .env.secrets 2>/dev/null | cut -d= -f2-)
+export TF_VAR_lxc_root_password ?= $(shell grep '^LXC_ROOT_PASSWORD=' .env.secrets 2>/dev/null | cut -d= -f2-)
+
 infra-init: ## Terraform init
 	cd infra/terraform && terraform init
 
@@ -73,13 +77,24 @@ infra-plan: ## Terraform plan
 	cd infra/terraform && terraform plan
 
 infra-apply: ## Terraform apply (provision LXC)
-	cd infra/terraform && terraform apply
+	cd infra/terraform && terraform apply -auto-approve
 
 infra-destroy: ## Terraform destroy (remove LXC)
 	@printf "Destroy all infrastructure? [y/N] " && read ans && [ "$${ans}" = "y" ] && \
 		(cd infra/terraform && terraform destroy) || echo "Aborted."
 
-infra-up: infra-apply ansible-fix-lxc ansible-prepare ansible-k3s ansible-argocd dns-setup ## Full deploy pipeline
+infra-up: infra-apply _wait-ssh ansible-prepare ansible-k3s ansible-argocd dns-setup ## Full deploy pipeline
+
+_wait-ssh: ## (internal) Quick SSH check (Terraform already verified)
+	@echo "Quick SSH verification..."
+	@for ip in 192.168.1.40 192.168.1.41 192.168.1.42; do \
+		printf "  $$ip..."; \
+		for i in $$(seq 1 10); do \
+			ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 -o BatchMode=yes root@$$ip true 2>/dev/null && printf " ok\n" && break; \
+			[ $$i -eq 10 ] && printf " TIMEOUT\n" && exit 1; \
+			sleep 2; \
+		done; \
+	done
 
 # ─── Ansible ─────────────────────────────────────────────────
 

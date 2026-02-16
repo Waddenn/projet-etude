@@ -4,8 +4,9 @@ kind: Ingress
 metadata:
   name: {{ .Release.Name }}-ingress
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
 spec:
+  ingressClassName: traefik
   rules:
     - host: {{ .Values.ingress.host }}
       http:
@@ -24,4 +25,23 @@ spec:
                 name: {{ .Release.Name }}-frontend
                 port:
                   number: 80
+{{- range .Values.ingress.extraHosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $.Release.Name }}-backend
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $.Release.Name }}-frontend
+                port:
+                  number: 80
+{{- end }}
 {{- end }}
