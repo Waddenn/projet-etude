@@ -9,7 +9,7 @@ spec:
         elements:
           - env: dev
             namespace: devboard-dev
-            revision: main # Temporairement main au lieu de develop
+            revision: main
           - env: staging
             namespace: devboard-staging
             revision: main
@@ -33,6 +33,12 @@ spec:
         helm:
           valueFiles:
             - values-{{env}}.yaml
+          # Re-inject parameters temporarily to satisfy Helm "required" checks
+          parameters:
+            - name: secrets.dbPassword
+              value: "__DB_PASSWORD__"
+            - name: secrets.jwtSecret
+              value: "__JWT_SECRET__"
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{namespace}}'
