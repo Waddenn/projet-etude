@@ -2,8 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
-    tags: ['v*']
+    tags: ['v*']  # Only build on version tags
   pull_request:
     branches: [main, develop]
 
