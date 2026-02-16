@@ -83,7 +83,7 @@ resource "proxmox_virtual_environment_container" "k3s_server" {
     keyctl  = true
   }
 
-  started    = true
+  started       = true
   start_on_boot = true
 }
 
@@ -148,6 +148,6 @@ resource "proxmox_virtual_environment_container" "k3s_agent" {
     keyctl  = true
   }
 
-  started    = true
+  started       = true
   start_on_boot = true
 }

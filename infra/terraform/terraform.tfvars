@@ -23,9 +23,9 @@ storage   = "Storage"
 disk_size = 32
 
 # K3s Server
-server_vmid  = 400
-server_ip    = "192.168.1.40"
-server_cpu   = 4
+server_vmid   = 400
+server_ip     = "192.168.1.40"
+server_cpu    = 4
 server_memory = 4096
 
 # K3s Agents
