@@ -36,10 +36,16 @@ ingress:
   enabled: true
   host: dev.devboard.local
 
+# ─── Secrets ─────────────────────────────────────────────────────
+# DO NOT put real passwords here (committed to Git).
+# Provide secrets at deploy time via:
+#   --set secrets.dbPassword=xxx --set secrets.jwtSecret=xxx
+# Or use ArgoCD + Vault/SealedSecrets for automated injection.
 secrets:
   dbUsername: devboard
-  dbPassword: devboard-secret
-  jwtSecret: changeme-jwt-secret-minimum-32-chars
+  dbName: devboard
+  # dbPassword: → provided via --set or Vault
+  # jwtSecret:  → provided via --set or Vault
 
 networkPolicies:
   enabled: false

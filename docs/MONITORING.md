@@ -316,7 +316,7 @@ count(kube_pod_info{namespace="devboard-dev"})
 ### 🎨 Créer un dashboard
 
 1. Aller sur http://grafana.devboard.local
-2. Login : admin/admin
+2. Login : `<voir .env.secrets>`
 3. Dashboards → New → New Dashboard
 4. Add visualization
 5. Sélectionner datasource : Prometheus

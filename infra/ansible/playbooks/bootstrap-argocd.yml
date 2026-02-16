@@ -1,0 +1,140 @@
+---
+# ─────────────────────────────────────────────────────────────────
+# Bootstrap ArgoCD + deploy Application CRDs
+# Eliminates the manual ArgoCD install step
+#
+# Usage:
+#   ansible-playbook -i inventory/dev.yml playbooks/bootstrap-argocd.yml
+# ─────────────────────────────────────────────────────────────────
+
+- name: Bootstrap ArgoCD on K3s cluster
+  hosts: k3s_server
+  become: true
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  # vars: argocd_version, argocd_namespace, project_repo → group_vars/all.yml
+
+  tasks:
+    # ─── Install ArgoCD ──────────────────────────────────────────
+    - name: Create ArgoCD namespace
+      shell: kubectl create namespace {{ argocd_namespace }} --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Install ArgoCD manifests
+      shell: kubectl apply -n {{ argocd_namespace }} -f https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml
+      register: argocd_install
+
+    - name: Wait for ArgoCD server to be ready
+      shell: kubectl rollout status deployment/argocd-server -n {{ argocd_namespace }} --timeout=300s
+      retries: 3
+      delay: 10
+
+    - name: Wait for ArgoCD application controller
+      shell: kubectl rollout status statefulset/argocd-application-controller -n {{ argocd_namespace }} --timeout=300s
+      retries: 3
+      delay: 10
+
+    - name: Wait for ArgoCD repo server
+      shell: kubectl rollout status deployment/argocd-repo-server -n {{ argocd_namespace }} --timeout=300s
+      retries: 3
+      delay: 10
+
+    # ─── Configure ArgoCD ────────────────────────────────────────
+    - name: Disable TLS on ArgoCD server (behind Traefik)
+      shell: |
+        kubectl patch deployment argocd-server -n {{ argocd_namespace }} \
+          --type='json' \
+          -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--insecure"}]'
+      register: patch_result
+      failed_when: false
+      changed_when: "'patched' in patch_result.stdout"
+
+    - name: Get ArgoCD initial admin password
+      shell: kubectl -n {{ argocd_namespace }} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
+      register: argocd_password
+      retries: 5
+      delay: 10
+      until: argocd_password.rc == 0
+
+    - name: Display ArgoCD admin password
+      debug:
+        msg: "ArgoCD admin password: {{ argocd_password.stdout }}"
+
+    # ─── Deploy ArgoCD Project ───────────────────────────────────
+    - name: Copy ArgoCD project definition
+      copy:
+        src: "{{ playbook_dir }}/../../argocd/projects/devboard-project.yaml"
+        dest: /tmp/argocd-project.yaml
+
+    - name: Apply ArgoCD project
+      shell: kubectl apply -f /tmp/argocd-project.yaml
+
+    # ─── Deploy ArgoCD Applications ──────────────────────────────
+    - name: Copy ArgoCD application manifests
+      copy:
+        src: "{{ playbook_dir }}/../../argocd/applications/"
+        dest: /tmp/argocd-apps/
+
+    - name: Read secrets file
+      local_action:
+        module: slurp
+        src: "{{ playbook_dir }}/../../../.env.secrets"
+      register: secrets_file
+      failed_when: false
+
+    - name: Parse secrets from .env.secrets
+      set_fact:
+        db_password: "{{ (secrets_file.content | b64decode | regex_search('DB_PASSWORD=(.+)', '\\1'))[0] | default('changeme') }}"
+        jwt_secret: "{{ (secrets_file.content | b64decode | regex_search('JWT_SECRET=(.+)', '\\1'))[0] | default('changeme') }}"
+        grafana_admin_password: "{{ (secrets_file.content | b64decode | regex_search('GRAFANA_ADMIN_PASSWORD=(.+)', '\\1'))[0] | default('admin') }}"
+        vault_dev_root_token: "{{ (secrets_file.content | b64decode | regex_search('VAULT_DEV_ROOT_TOKEN=(.+)', '\\1'))[0] | default('root') }}"
+      when: secrets_file.content is defined
+
+    - name: Set fallback secrets if .env.secrets not found
+      set_fact:
+        db_password: "changeme"
+        jwt_secret: "changeme-jwt-secret-minimum-32-chars"
+        grafana_admin_password: "admin"
+        vault_dev_root_token: "root"
+      when: secrets_file.content is not defined
+
+    - name: Inject secrets into ArgoCD application manifests
+      shell: |
+        cd /tmp/argocd-apps/
+        sed -i 's|__DB_PASSWORD__|{{ db_password }}|g' *.yaml
+        sed -i 's|__JWT_SECRET__|{{ jwt_secret }}|g' *.yaml
+        sed -i 's|__GRAFANA_ADMIN_PASSWORD__|{{ grafana_admin_password }}|g' *.yaml
+        sed -i 's|__VAULT_DEV_ROOT_TOKEN__|{{ vault_dev_root_token }}|g' *.yaml
+
+    - name: Apply ArgoCD applications
+      shell: kubectl apply -f /tmp/argocd-apps/
+      register: apps_result
+
+    - name: Display applied applications
+      debug:
+        msg: "{{ apps_result.stdout_lines }}"
+
+    # ─── Wait for initial sync ───────────────────────────────────
+    - name: Wait for ArgoCD applications to sync (initial)
+      shell: |
+        kubectl get applications -n {{ argocd_namespace }} -o jsonpath='{range .items[*]}{.metadata.name}: {.status.sync.status}{"\n"}{end}'
+      register: sync_status
+      retries: 30
+      delay: 20
+      until: "'OutOfSync' not in sync_status.stdout"
+      failed_when: false
+
+    - name: Display final sync status
+      debug:
+        msg: "{{ sync_status.stdout_lines }}"
+
+    # ─── Save credentials ────────────────────────────────────────
+    - name: Save ArgoCD credentials locally
+      local_action:
+        module: copy
+        content: |
+          # ArgoCD Credentials (auto-generated)
+          URL: http://argocd.devboard.local
+          Username: admin
+          Password: {{ argocd_password.stdout }}
+        dest: "{{ playbook_dir }}/../argocd-credentials.txt"
+        mode: "0600"

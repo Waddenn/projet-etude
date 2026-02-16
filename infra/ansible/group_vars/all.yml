@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────────────────────────
+# Shared Ansible variables for all playbooks
+# ─────────────────────────────────────────────────────────────────
+# These are the single source of truth for versions and repo URLs
+# used by: install-k3s.yml, bootstrap-argocd.yml, prepare-lxc-k3s.yml
+#
+# If you change IPs, also update: inventory/dev.yml, ../../config.env
+# ─────────────────────────────────────────────────────────────────
+
+# ─── Versions ────────────────────────────────────────────────────
+k3s_version: "v1.31.4+k3s1"
+argocd_version: "v2.13.3"
+
+# ─── Git ─────────────────────────────────────────────────────────
+project_repo: "https://github.com/Waddenn/projet-etude.git"
+project_branch: "main"
+
+# ─── ArgoCD ──────────────────────────────────────────────────────
+argocd_namespace: "argocd"

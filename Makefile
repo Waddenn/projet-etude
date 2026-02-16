@@ -1,40 +1,46 @@
-.PHONY: help dev up down build test lint scan deploy-dev deploy-staging
+.PHONY: help up down dev logs build test lint scan \
+        infra-init infra-plan infra-apply infra-destroy infra-up \
+        ansible-fix-lxc ansible-prepare ansible-k3s ansible-argocd \
+        generate-secrets setup seed benchmark vault-init argocd-sync dns-setup
 
-help: ## Show this help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+include config.env
+
+help: ## Show available commands
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 # ─── Local Development ────────────────────────────────────────
 
-up: ## Start all services locally
+up: ## Start all services
 	docker compose up -d
 
 down: ## Stop all services
 	docker compose down
 
-dev: ## Start backend + frontend in dev mode (requires local Go & Node)
+dev: ## Start in dev mode (local Go + Node)
 	cd app/backend && go run ./cmd/main.go &
 	cd app/frontend && npm run dev
 
-logs: ## Show logs
+logs: ## Tail service logs
 	docker compose logs -f
 
 # ─── Build ────────────────────────────────────────────────────
 
-build-backend: ## Build backend Docker image
-	docker build -t devboard/backend:latest -f app/backend/Dockerfile app/backend/
+build-backend: ## Build backend image
+	docker build -t $(DOCKER_REGISTRY)/backend:latest -f app/backend/Dockerfile app/backend/
 
-build-frontend: ## Build frontend Docker image
-	docker build -t devboard/frontend:latest -f app/frontend/Dockerfile app/frontend/
+build-frontend: ## Build frontend image
+	docker build -t $(DOCKER_REGISTRY)/frontend:latest -f app/frontend/Dockerfile app/frontend/
 
-build: build-backend build-frontend ## Build all Docker images
+build: build-backend build-frontend ## Build all images
 
 # ─── Test ─────────────────────────────────────────────────────
 
-test-backend: ## Run backend tests
+test-backend: ## Test backend
 	cd app/backend && go test -v -race ./...
 
-test-frontend: ## Run frontend tests
-	cd app/frontend && npm run test
+test-frontend: ## Test frontend
+	cd app/frontend && npm test
 
 test: test-backend test-frontend ## Run all tests
 
@@ -48,80 +54,117 @@ lint-frontend: ## Lint frontend
 
 lint: lint-backend lint-frontend ## Lint all
 
-# ─── Security ─────────────────────────────────────────────────
+# ─── Security Scan ────────────────────────────────────────────
 
-scan-backend: ## Scan backend image with Trivy
-	trivy image devboard/backend:latest
+scan-backend: ## Scan backend with Trivy
+	trivy image $(DOCKER_REGISTRY)/backend:latest
 
-scan-frontend: ## Scan frontend image with Trivy
-	trivy image devboard/frontend:latest
+scan-frontend: ## Scan frontend with Trivy
+	trivy image $(DOCKER_REGISTRY)/frontend:latest
 
 scan: scan-backend scan-frontend ## Scan all images
 
-# ─── Kubernetes ───────────────────────────────────────────────
+# ─── Infrastructure ──────────────────────────────────────────
 
-deploy-dev: ## Deploy to dev environment
-	kubectl apply -k k8s/overlays/dev/
-
-deploy-staging: ## Deploy to staging environment
-	kubectl apply -k k8s/overlays/staging/
-
-deploy-prod: ## Deploy to prod environment
-	kubectl apply -k k8s/overlays/prod/
-
-helm-install: ## Install with Helm (dev)
-	helm upgrade --install devboard helm/devboard/ -f helm/devboard/values-dev.yaml -n devboard-dev --create-namespace
-
-helm-install-prod: ## Install with Helm (prod)
-	helm upgrade --install devboard helm/devboard/ -f helm/devboard/values-prod.yaml -n devboard-prod --create-namespace
-
-# ─── Proxmox Infrastructure ──────────────────────────────────
-
-infra-up: ## Deploy full K3s infra on Proxmox (Terraform + Ansible)
-	./scripts/infra-up.sh
-
-infra-down: ## Destroy K3s infra on Proxmox
-	./scripts/infra-down.sh
-
-infra-init: ## Initialize Terraform
+infra-init: ## Terraform init
 	cd infra/terraform && terraform init
 
-infra-plan: ## Plan Terraform changes (preview LXC creation)
+infra-plan: ## Terraform plan
 	cd infra/terraform && terraform plan
 
-infra-apply: ## Apply Terraform changes (create LXC on Proxmox)
+infra-apply: ## Terraform apply (provision LXC)
 	cd infra/terraform && terraform apply
 
-infra-destroy: ## Destroy Terraform resources (remove LXC from Proxmox)
-	cd infra/terraform && terraform destroy
+infra-destroy: ## Terraform destroy (remove LXC)
+	@printf "Destroy all infrastructure? [y/N] " && read ans && [ "$${ans}" = "y" ] && \
+		(cd infra/terraform && terraform destroy) || echo "Aborted."
 
-ansible-k3s: ## Install K3s via Ansible
+infra-up: infra-apply ansible-fix-lxc ansible-prepare ansible-k3s ansible-argocd dns-setup ## Full deploy pipeline
+
+# ─── Ansible ─────────────────────────────────────────────────
+
+ansible-fix-lxc: ## Fix LXC configs for K3s
+	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/fix-lxc-config.yml
+
+ansible-prepare: ## Prepare containers for K3s
+	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/prepare-lxc-k3s.yml
+
+ansible-k3s: ## Install K3s cluster
 	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/install-k3s.yml
 
-ansible-tools: ## Deploy tools via Ansible (Prometheus, Grafana, Vault...)
-	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/deploy-tools.yml
+ansible-argocd: ## Bootstrap ArgoCD + applications
+	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/bootstrap-argocd.yml
 
-ssh-server: ## SSH into K3s server
-	ssh root@192.168.40.40
+# ─── Secrets & Setup ─────────────────────────────────────────
 
-ssh-agent1: ## SSH into K3s agent 1
-	ssh root@192.168.40.41
+generate-secrets: ## Generate .env.secrets with random passwords
+	@if [ -f .env.secrets ]; then \
+		printf ".env.secrets exists. Overwrite? [y/N] " && read ans && [ "$${ans}" = "y" ] || exit 0; \
+	fi
+	@printf '%s\n' \
+		'# DevBoard Secrets — $(shell date +%Y-%m-%d)' \
+		'# DO NOT COMMIT (git-ignored)' \
+		'' \
+		'PROXMOX_PASSWORD=' \
+		'LXC_ROOT_PASSWORD=' \
+		'' \
+		"DB_USERNAME=devboard" \
+		"DB_PASSWORD=$$(openssl rand -base64 24 | tr -d '/+=')" \
+		"DB_NAME=devboard" \
+		'' \
+		"JWT_SECRET=$$(openssl rand -base64 48 | tr -d '/+=')" \
+		'' \
+		"GRAFANA_ADMIN_PASSWORD=$$(openssl rand -base64 16 | tr -d '/+=')" \
+		"VAULT_DEV_ROOT_TOKEN=$$(openssl rand -base64 24 | tr -d '/+=')" \
+		> .env.secrets
+	@chmod 600 .env.secrets
+	@echo "Generated .env.secrets — fill in PROXMOX_PASSWORD and LXC_ROOT_PASSWORD"
 
-ssh-agent2: ## SSH into K3s agent 2
-	ssh root@192.168.40.42
-
-# ─── ELK Demo ─────────────────────────────────────────────────
-
-elk-up: ## Start ELK demo stack
-	docker compose -f monitoring/elk-demo/docker-compose.yml up -d
-
-elk-down: ## Stop ELK demo stack
-	docker compose -f monitoring/elk-demo/docker-compose.yml down
-
-# ─── Utilities ────────────────────────────────────────────────
+setup: ## First-time local setup (secrets + deps + postgres)
+	@[ -f .env.secrets ] || $(MAKE) generate-secrets
+	cd app/backend && go mod download
+	cd app/frontend && npm ci
+	docker compose up -d postgres
+	@echo "Setup complete. Run 'make up' to start all services."
 
 seed: ## Seed database with sample data
-	./scripts/seed-db.sh
+	@API=$${API_URL:-http://localhost:8080/api/v1}; \
+	for p in \
+		'{"name":"Portail Citoyen","client":"Mairie de Lyon","status":"in_progress","description":"Portail web pour les démarches administratives"}' \
+		'{"name":"E-commerce PME","client":"Boulangerie Martin","status":"delivered","description":"Boutique en ligne avec paiement intégré"}' \
+		'{"name":"App Mobile Santé","client":"Clinique du Parc","status":"draft","description":"Application de prise de rendez-vous"}' \
+		'{"name":"Dashboard RH","client":"Groupe Nexia","status":"in_progress","description":"Tableau de bord RH avec indicateurs temps réel"}' \
+		'{"name":"API Facturation","client":"Cabinet Durand","status":"delivered","description":"API REST de gestion de factures"}' \
+		'{"name":"Refonte Intranet","client":"Région Occitanie","status":"draft","description":"Modernisation de l intranet régional"}'; \
+	do curl -sf -X POST "$$API/projects" -H "Content-Type: application/json" -d "$$p" > /dev/null && \
+		echo "  Created: $$(echo $$p | grep -o '"name":"[^"]*"' | cut -d'"' -f4)"; \
+	done
 
-benchmark: ## Run load test
-	./scripts/benchmark.sh
+benchmark: ## Load test (requires hey: go install github.com/rakyll/hey@latest)
+	hey -z $${DURATION:-30s} -c $${CONCURRENCY:-50} $${TARGET_URL:-http://localhost:8080}/api/v1/projects
+
+vault-init: ## Initialize Vault with secrets from .env.secrets
+	kubectl cp security/vault/policies/devboard-policy.hcl security/vault-0:/tmp/devboard-policy.hcl
+	@. ./.env.secrets && \
+	kubectl exec -n security vault-0 -- sh -c " \
+		export VAULT_ADDR=http://127.0.0.1:8200 && \
+		vault secrets enable -path=secret kv-v2 2>/dev/null; \
+		vault kv put secret/devboard/db username=$${DB_USERNAME} password=$${DB_PASSWORD} host=postgres port=5432 database=$${DB_NAME} && \
+		vault kv put secret/devboard/jwt secret=$${JWT_SECRET} && \
+		vault policy write devboard /tmp/devboard-policy.hcl && \
+		vault auth enable kubernetes 2>/dev/null; \
+		vault write auth/kubernetes/config kubernetes_host=https://kubernetes.default.svc && \
+		vault write auth/kubernetes/role/devboard bound_service_account_names=devboard \
+			bound_service_account_namespaces=devboard-dev,devboard-staging,devboard-prod policies=devboard ttl=1h"
+	@echo "Vault initialized."
+
+argocd-sync: ## Force sync all ArgoCD applications
+	@kubectl get applications -n argocd -o name | xargs -I{} kubectl patch {} -n argocd \
+		-p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}' --type merge
+
+dns-setup: ## Add service domains to /etc/hosts
+	@grep -q "$(DOMAIN)" /etc/hosts 2>/dev/null || \
+		(echo "$(SERVER_IP) dev.$(DOMAIN) argocd.$(DOMAIN) grafana.$(DOMAIN) prometheus.$(DOMAIN) vault.$(DOMAIN)" | sudo tee -a /etc/hosts)
+
+ssh-server: ## SSH into K3s server
+	ssh root@$(SERVER_IP)

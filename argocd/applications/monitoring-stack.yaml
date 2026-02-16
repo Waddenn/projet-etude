@@ -26,7 +26,7 @@ spec:
                       storage: 10Gi
         
         grafana:
-          adminPassword: admin
+          adminPassword: __GRAFANA_ADMIN_PASSWORD__
           persistence:
             enabled: true
             size: 5Gi

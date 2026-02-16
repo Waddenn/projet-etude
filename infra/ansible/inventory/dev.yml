@@ -2,17 +2,28 @@ all:
   vars:
     ansible_user: root
     ansible_ssh_private_key_file: ~/.ssh/id_rsa
-    k3s_version: v1.31.4+k3s1
+    # k3s_version, argocd_version, project_repo → group_vars/all.yml
 
   children:
+    # ─── Proxmox host (for LXC config fixes) ──────────────────
+    proxmox:
+      hosts:
+        proxade:
+          ansible_host: 192.168.1.1
+          ansible_port: 22
+
+    # ─── K3s cluster nodes ─────────────────────────────────────
     k3s_server:
       hosts:
         k3s-server:
           ansible_host: 192.168.1.40
+          vmid: 400
 
     k3s_agents:
       hosts:
         k3s-agent-1:
           ansible_host: 192.168.1.41
+          vmid: 401
         k3s-agent-2:
           ansible_host: 192.168.1.42
+          vmid: 402

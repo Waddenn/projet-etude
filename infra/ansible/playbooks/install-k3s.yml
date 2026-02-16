@@ -1,7 +1,28 @@
 ---
-- name: Prepare LXC containers for K3s
-  hosts: all
+# ─────────────────────────────────────────────────────────────────
+# Install K3s cluster (server + agents)
+# Prerequisites should be installed by prepare-lxc-k3s.yml first
+#
+# Usage:
+#   ansible-playbook -i inventory/dev.yml playbooks/install-k3s.yml
+# ─────────────────────────────────────────────────────────────────
+
+- name: Ensure LXC prerequisites (idempotent)
+  hosts: k3s_server:k3s_agents
   tasks:
+    - name: Verify /dev/kmsg exists
+      stat:
+        path: /dev/kmsg
+      register: kmsg_check
+
+    - name: Create /dev/kmsg if missing
+      file:
+        src: /dev/console
+        dest: /dev/kmsg
+        state: link
+        force: true
+      when: not kmsg_check.stat.exists
+
     - name: Install prerequisites
       apt:
         name:
@@ -9,15 +30,9 @@
           - ca-certificates
           - open-iscsi
           - apparmor
+          - iptables
         state: present
         update_cache: true
-
-    - name: Ensure apparmor is started
-      systemd:
-        name: apparmor
-        state: started
-        enabled: true
-      ignore_errors: true
 
 - name: Install K3s server
   hosts: k3s_server

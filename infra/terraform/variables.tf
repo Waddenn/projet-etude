@@ -23,6 +23,12 @@ variable "proxmox_node" {
   default     = "proxade"
 }
 
+variable "proxmox_ssh_host" {
+  description = "Proxmox host IP/hostname for SSH (used by null_resource to patch LXC configs)"
+  type        = string
+  default     = "192.168.1.1"
+}
+
 # ─── LXC Template ────────────────────────────────────────────────
 
 variable "lxc_template" {

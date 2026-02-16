@@ -23,6 +23,57 @@ provider "proxmox" {
   }
 }
 
+# ─── LXC Config Fix (K3s compatibility) ────────────────────────
+# The bpg/proxmox provider cannot set raw LXC config lines
+# (lxc.mount.auto, lxc.apparmor.profile, lxc.cap.drop).
+# This null_resource SSHes into the Proxmox host to patch them
+# automatically after container creation.
+
+resource "null_resource" "fix_lxc_config" {
+  depends_on = [
+    proxmox_virtual_environment_container.k3s_server,
+    proxmox_virtual_environment_container.k3s_agent,
+  ]
+
+  # Re-run if container IDs change
+  triggers = {
+    server_id = proxmox_virtual_environment_container.k3s_server.vm_id
+    agent_ids = join(",", [for a in proxmox_virtual_environment_container.k3s_agent : a.vm_id])
+  }
+
+  provisioner "remote-exec" {
+    connection {
+      type = "ssh"
+      host = var.proxmox_ssh_host
+      user = "root"
+      agent = true
+    }
+
+    inline = [
+      "echo '=== Patching LXC configs for K3s compatibility ==='",
+      # Patch each container config
+      "for VMID in ${var.server_vmid} ${join(" ", [for i in range(var.agent_count) : var.agent_vmid_start + i])}; do",
+      "  CONF=/etc/pve/lxc/$${VMID}.conf",
+      "  if ! grep -q 'lxc.apparmor.profile' $${CONF} 2>/dev/null; then",
+      "    echo '' >> $${CONF}",
+      "    echo '# K3S LXC FIX - MANAGED BY TERRAFORM' >> $${CONF}",
+      "    echo 'lxc.mount.auto: proc:rw sys:rw cgroup:rw' >> $${CONF}",
+      "    echo 'lxc.apparmor.profile: unconfined' >> $${CONF}",
+      "    echo 'lxc.cap.drop: ' >> $${CONF}",
+      "    echo \"Patched $${CONF}\"",
+      "    pct stop $${VMID} || true",
+      "    sleep 2",
+      "    pct start $${VMID}",
+      "    echo \"Restarted container $${VMID}\"",
+      "  else",
+      "    echo \"$${CONF} already patched, skipping\"",
+      "  fi",
+      "done",
+      "echo '=== LXC config patching complete ==='",
+    ]
+  }
+}
+
 # ─── K3s Server ─────────────────────────────────────────────────
 
 resource "proxmox_virtual_environment_container" "k3s_server" {

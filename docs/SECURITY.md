@@ -42,7 +42,7 @@ vault kv get secret/devboard/db
 # Key         Value
 # ---         -----
 # username    devboard
-# password    devboard-secret
+# password    <voir .env.secrets>
 # host        postgres
 # port        5432
 # database    devboard
@@ -145,8 +145,8 @@ metadata:
   name: devboard-secrets
 stringData:
   db-username: devboard
-  db-password: devboard-secret
-  database-url: postgres://devboard:devboard-secret@postgres:5432/devboard
+  db-password: <voir .env.secrets>  # généré par make generate-secrets
+  database-url: postgres://devboard:<voir .env.secrets>@postgres:5432/devboard
 ```
 
 **Option 2 : Vault Agent Injector** (meilleure pratique)
@@ -435,9 +435,9 @@ metadata:
 type: Opaque
 stringData:
   db-username: devboard
-  db-password: devboard-secret
-  database-url: postgres://devboard:devboard-secret@postgres:5432/devboard
-  jwt-secret: changeme-jwt-secret-minimum-32-chars
+  db-password: <voir .env.secrets>  # généré par make generate-secrets
+  database-url: postgres://devboard:<voir .env.secrets>@postgres:5432/devboard
+  jwt-secret: <voir .env.secrets>  # généré par make generate-secrets
 ```
 
 ### 🔒 Bonnes pratiques

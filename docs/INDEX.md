@@ -112,9 +112,9 @@ kubectl get pods -n devboard-dev
 
 # URLs
 http://dev.devboard.local          # DevBoard app
-http://grafana.devboard.local      # Grafana (admin/admin)
+http://grafana.devboard.local      # Grafana (voir .env.secrets)
 http://prometheus.devboard.local   # Prometheus
-http://vault.devboard.local        # Vault (token: root)
+http://vault.devboard.local        # Vault (voir .env.secrets)
 ```
 
 ### Monitoring

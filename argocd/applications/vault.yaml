@@ -17,7 +17,7 @@ spec:
         server:
           dev:
             enabled: true
-            devRootToken: "root"
+            devRootToken: "__VAULT_DEV_ROOT_TOKEN__"
           
           ingress:
             enabled: false

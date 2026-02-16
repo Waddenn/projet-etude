@@ -1,0 +1,57 @@
+---
+# ─────────────────────────────────────────────────────────────────
+# Fix LXC configuration on Proxmox host for K3s compatibility
+# Must be run AFTER terraform apply and BEFORE install-k3s.yml
+#
+# This playbook SSHes into the Proxmox host and:
+#   1. Appends required LXC config lines (proc/sys rw, apparmor, caps)
+#   2. Restarts all K3s LXC containers
+#
+# Usage:
+#   ansible-playbook -i inventory/dev.yml playbooks/fix-lxc-config.yml
+# ─────────────────────────────────────────────────────────────────
+
+- name: Fix LXC configs on Proxmox host for K3s
+  hosts: proxmox
+  gather_facts: false
+  vars:
+    lxc_vmids: "{{ groups['all'] | map('extract', hostvars, 'vmid') | list }}"
+
+  tasks:
+    - name: Gather LXC VMIDs from inventory
+      debug:
+        msg: "Fixing LXC config for VMIDs: {{ lxc_vmids }}"
+
+    - name: Check if LXC config already patched
+      shell: grep -q 'lxc.apparmor.profile' /etc/pve/lxc/{{ item }}.conf
+      loop: "{{ lxc_vmids }}"
+      register: lxc_check
+      failed_when: false
+      changed_when: false
+
+    - name: Append K3s-required LXC config lines
+      blockinfile:
+        path: "/etc/pve/lxc/{{ item.item }}.conf"
+        marker: "# {mark} K3S LXC FIX - MANAGED BY ANSIBLE"
+        block: |
+          lxc.mount.auto: proc:rw sys:rw cgroup:rw
+          lxc.apparmor.profile: unconfined
+          lxc.cap.drop:
+      loop: "{{ lxc_check.results }}"
+      when: item.rc != 0
+      register: lxc_patched
+
+    - name: Restart patched LXC containers
+      shell: "pct stop {{ item.item.item }} && sleep 2 && pct start {{ item.item.item }}"
+      loop: "{{ lxc_patched.results | default([]) }}"
+      when: item is changed
+
+    - name: Wait for containers to be reachable after restart
+      wait_for:
+        host: "{{ hostvars[item]['ansible_host'] }}"
+        port: 22
+        timeout: 120
+        delay: 5
+      loop: "{{ groups['k3s_server'] + groups['k3s_agents'] }}"
+      delegate_to: localhost
+      when: lxc_patched is changed

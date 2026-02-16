@@ -121,7 +121,7 @@ ingress:
   host: dev.devboard.local
 
 secrets:
-  dbPassword: devboard-secret
+  dbPassword: <voir .env.secrets>  # généré par make generate-secrets
 
 networkPolicies:
   enabled: false
