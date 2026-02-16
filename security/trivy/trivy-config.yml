@@ -1,0 +1,22 @@
+scan:
+  security-checks:
+    - vuln
+    - config
+    - secret
+  severity:
+    - CRITICAL
+    - HIGH
+
+cache:
+  backend: fs
+
+db:
+  skip-update: false
+
+image:
+  removed-pkgs: true
+
+vulnerability:
+  type:
+    - os
+    - library

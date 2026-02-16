@@ -1,0 +1,48 @@
+backend:
+  image:
+    repository: ghcr.io/votre-groupe/devboard/backend
+    tag: latest
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPU: 70
+
+frontend:
+  image:
+    repository: ghcr.io/votre-groupe/devboard/frontend
+    tag: latest
+  replicas: 2
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+postgres:
+  image: postgres:16-alpine
+  storage: 5Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ingress:
+  enabled: true
+  host: devboard.local
+
+networkPolicies:
+  enabled: true

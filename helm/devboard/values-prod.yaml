@@ -1,0 +1,19 @@
+backend:
+  replicas: 2
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPU: 70
+
+frontend:
+  replicas: 2
+
+postgres:
+  storage: 20Gi
+
+ingress:
+  host: devboard.local
+
+networkPolicies:
+  enabled: true

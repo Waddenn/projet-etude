@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: devboard
+  labels:
+    app: devboard
+    component: frontend
+spec:
+  selector:
+    app: devboard
+    component: frontend
+  ports:
+    - port: 80
+      targetPort: http
+      name: http
