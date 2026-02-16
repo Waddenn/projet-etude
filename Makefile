@@ -102,13 +102,13 @@ ansible-tools: ## Deploy tools via Ansible (Prometheus, Grafana, Vault...)
 	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/deploy-tools.yml
 
 ssh-server: ## SSH into K3s server
-	ssh root@192.168.1.40
+	ssh root@192.168.40.40
 
 ssh-agent1: ## SSH into K3s agent 1
-	ssh root@192.168.1.41
+	ssh root@192.168.40.41
 
 ssh-agent2: ## SSH into K3s agent 2
-	ssh root@192.168.1.42
+	ssh root@192.168.40.42
 
 # ─── ELK Demo ─────────────────────────────────────────────────
 

@@ -37,7 +37,7 @@
 - **Namespaces** : devboard-dev, devboard-staging, devboard-prod, argocd, monitoring, security créés
 
 ### Infrastructure as Code (Proxmox)
-- **Terraform** : `infra/terraform/` - Provider `bpg/proxmox`, crée 3 LXC Debian 12 privilegiés sur proxade (VMID 400-402, IPs 192.168.1.40-42)
+- **Terraform** : `infra/terraform/` - Provider `bpg/proxmox`, crée 3 LXC Debian 12 privilegiés sur proxade (VMID 400-402, IPs 192.168.40.40-42)
 - **Ansible** : `infra/ansible/` - Inventaire + playbooks pour installer K3s et déployer les outils (Prometheus, Grafana, Loki, Vault)
 - **K3s cluster** : 3 nœuds opérationnels (1 server + 2 agents), version v1.31.4+k3s1
 - **LXC fixes** : configs pour K3s (privileged, proc/sys rw, kmsg, iptables, apparmor unconfined)
@@ -85,7 +85,7 @@
 ### ✅ Infrastructure opérationnelle
 | Composant | Statut | URL d'accès | Identifiants |
 |-----------|--------|-------------|--------------|
-| **K3s Cluster** | ✅ Running | 192.168.1.40-42 | root@proxade |
+| **K3s Cluster** | ✅ Running | 192.168.40.40-42 | root@proxade |
 | **ArgoCD** | ✅ Running | http://argocd.devboard.local | admin / kzIumMQcQRRpLlLl |
 | **Prometheus** | ✅ Running | http://prometheus.devboard.local | - |
 | **Grafana** | ✅ Running | http://grafana.devboard.local | admin / prom-operator |
@@ -94,13 +94,13 @@
 | **DevBoard Backend** | ✅ Running | http://devboard.local/api | - |
 | **DevBoard Frontend** | ✅ Running | http://devboard.local | - |
 | **PostgreSQL** | ✅ Running | postgres-svc:5432 (interne) | devboard / devboard123 |
-| **Traefik Ingress** | ✅ Running | 192.168.1.40:80 | - |
+| **Traefik Ingress** | ✅ Running | 192.168.40.40:80 | - |
 | **GitHub Registry** | ✅ Active | ghcr.io/waddenn/projet-etude | backend:latest, frontend:latest |
 
 ### 📝 Accès aux services
 Voir **[docs/SERVICES-ACCESS.md](docs/SERVICES-ACCESS.md)** pour les détails complets.
 
-**Depuis ton navigateur** (après ajout de `192.168.1.40 devboard.local argocd.devboard.local grafana.devboard.local vault.devboard.local` dans `/etc/hosts`) :
+**Depuis ton navigateur** (après ajout de `192.168.40.40 devboard.local argocd.devboard.local grafana.devboard.local vault.devboard.local` dans `/etc/hosts`) :
 - Frontend : http://devboard.local
 - Backend API : http://devboard.local/api/health
 - ArgoCD : http://argocd.devboard.local
