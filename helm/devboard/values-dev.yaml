@@ -1,8 +1,8 @@
 backend:
   image:
-    repository: docker.io/library/devboard-backend
+    repository: ghcr.io/waddenn/projet-etude/backend
     tag: latest
-    pullPolicy: Never
+    pullPolicy: IfNotPresent
   replicas: 1
   resources:
     requests:
@@ -16,9 +16,9 @@ backend:
 
 frontend:
   image:
-    repository: docker.io/library/devboard-frontend
+    repository: ghcr.io/waddenn/projet-etude/frontend
     tag: latest
-    pullPolicy: Never
+    pullPolicy: IfNotPresent
   replicas: 1
   resources:
     requests:
