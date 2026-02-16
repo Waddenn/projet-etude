@@ -2,6 +2,8 @@
 - name: Deploy DevOps tools on K3s cluster
   hosts: k3s_server
   become: true
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   tasks:
     - name: Install Helm
       shell: |
@@ -20,7 +22,7 @@
       command: helm repo update
 
     - name: Create namespaces
-      command: "kubectl create namespace {{ item }} --dry-run=client -o yaml | kubectl apply -f -"
+      shell: "kubectl create namespace {{ item }} --dry-run=client -o yaml | kubectl apply -f -"
       loop:
         - devboard-dev
         - devboard-staging
