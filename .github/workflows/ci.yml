@@ -192,62 +192,7 @@ jobs:
           scan-ref: '.'
           severity: 'CRITICAL,HIGH'
 
-  # ─── Deploy Dev ──────────────────────────────────────────────
-  deploy-dev:
-    needs: [build-backend, build-frontend, trivy-scan-backend, trivy-scan-frontend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
-    environment: dev
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-kubectl@v3
-      - name: Set kubeconfig
-        run: echo "${{ secrets.KUBECONFIG }}" | base64 -d > /tmp/kubeconfig
-      - name: Deploy to dev
-        env:
-          KUBECONFIG: /tmp/kubeconfig
-        run: |
-          kubectl set image deployment/backend backend=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend:${{ github.sha }} -n devboard-dev
-          kubectl set image deployment/frontend frontend=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:${{ github.sha }} -n devboard-dev
-          kubectl rollout status deployment/backend -n devboard-dev --timeout=120s
-          kubectl rollout status deployment/frontend -n devboard-dev --timeout=120s
+  # NOTE: Manual deployment jobs (deploy-dev, deploy-staging, deploy-prod) 
+  # have been removed. Deployment is now handled automatically by 
+  # ArgoCD Image Updater (Pull-based GitOps).
 
-  # ─── Deploy Staging ──────────────────────────────────────────
-  deploy-staging:
-    needs: [build-backend, build-frontend, trivy-scan-backend, trivy-scan-frontend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-kubectl@v3
-      - name: Set kubeconfig
-        run: echo "${{ secrets.KUBECONFIG }}" | base64 -d > /tmp/kubeconfig
-      - name: Deploy to staging
-        env:
-          KUBECONFIG: /tmp/kubeconfig
-        run: |
-          kubectl set image deployment/backend backend=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend:${{ github.sha }} -n devboard-staging
-          kubectl set image deployment/frontend frontend=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:${{ github.sha }} -n devboard-staging
-          kubectl rollout status deployment/backend -n devboard-staging --timeout=120s
-          kubectl rollout status deployment/frontend -n devboard-staging --timeout=120s
-
-  # ─── Deploy Prod (manual approval via GitHub environment) ────
-  deploy-prod:
-    needs: [build-backend, build-frontend, trivy-scan-backend, trivy-scan-frontend]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-kubectl@v3
-      - name: Set kubeconfig
-        run: echo "${{ secrets.KUBECONFIG }}" | base64 -d > /tmp/kubeconfig
-      - name: Deploy to production
-        env:
-          KUBECONFIG: /tmp/kubeconfig
-        run: |
-          kubectl set image deployment/backend backend=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend:${{ github.ref_name }} -n devboard-prod
-          kubectl set image deployment/frontend frontend=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:${{ github.ref_name }} -n devboard-prod
-          kubectl rollout status deployment/backend -n devboard-prod --timeout=180s
-          kubectl rollout status deployment/frontend -n devboard-prod --timeout=180s

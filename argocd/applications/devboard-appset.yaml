@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: devboard-apps
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: devboard-dev
+            revision: develop
+          - env: staging
+            namespace: devboard-staging
+            revision: main
+          - env: prod
+            namespace: devboard-prod
+            revision: main # ou un tag spécifique via un autre générateur
+  template:
+    metadata:
+      name: '{{env}}-devboard-app'
+      annotations:
+        argocd-image-updater.argoproj.io/image-list: backend=ghcr.io/waddenn/projet-etude/backend, frontend=ghcr.io/waddenn/projet-etude/frontend
+        argocd-image-updater.argoproj.io/backend.update-strategy: latest
+        argocd-image-updater.argoproj.io/frontend.update-strategy: latest
+        argocd-image-updater.argoproj.io/write-back-method: git
+    spec:
+      project: devboard
+      source:
+        repoURL: https://github.com/Waddenn/projet-etude.git
+        targetRevision: '{{revision}}'
+        path: helm/devboard
+        helm:
+          valueFiles:
+            - values-{{env}}.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

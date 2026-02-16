@@ -4,9 +4,23 @@ kind: Ingress
 metadata:
   name: {{ .Release.Name }}-ingress
   annotations:
+    kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    {{- if .Values.ingress.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.issuer | default "selfsigned-issuer" }}
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    {{- end }}
 spec:
   ingressClassName: traefik
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+        {{- range .Values.ingress.extraHosts }}
+        - {{ . }}
+        {{- end }}
+      secretName: {{ .Release.Name }}-tls-cert
+  {{- end }}
   rules:
     - host: {{ .Values.ingress.host }}
       http:
