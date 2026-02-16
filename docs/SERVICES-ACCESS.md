@@ -1,89 +1,85 @@
 # Services disponibles - DevBoard
 
-## Infrastructure K3s
-- **Cluster** : 3 nœuds (1 server + 2 agents)
-- **IP K3s Server** : `192.168.1.40`
-- **IP K3s Agent 1** : `192.168.1.41`
-- **IP K3s Agent 2** : `192.168.1.42`
+## 🌐 Accès aux services (sans localhost)
+
+### Configuration requise sur votre machine
+Ajouter dans `/etc/hosts` (Linux/Mac) ou `C:\Windows\System32\drivers\etc\hosts` (Windows) :
+```
+192.168.1.40 dev.devboard.local
+192.168.1.40 grafana.devboard.local
+192.168.1.40 prometheus.devboard.local
+192.168.1.40 alertmanager.devboard.local
+192.168.1.40 vault.devboard.local
+```
+
+**Note** : Vous pouvez utiliser n'importe quelle IP des nœuds (192.168.1.40, .41 ou .42)
+
+---
 
 ## Application DevBoard
 
-### Accès web
+### 🌍 Accès web direct
 - **URL** : http://dev.devboard.local
   - Frontend sur `/`
   - Backend API sur `/api/`
-  
-**Configuration locale requise** : Ajouter dans `/etc/hosts` :
-```
-192.168.1.40 dev.devboard.local
-```
-
-### Pods et services
-```bash
-kubectl get pods -n devboard-dev
-# devboard-backend    → API REST (port 8080)
-# devboard-frontend   → Interface React (port 80)
-# devboard-postgres   → Base de données PostgreSQL (port 5432)
-```
 
 ### Endpoints santé
-- **Backend health** : `curl http://192.168.1.40/api/health`
-- **Backend ready** : `curl http://192.168.1.40/api/ready`
-- **Backend metrics** : `curl http://192.168.1.40/api/metrics`
+- **Backend health** : http://dev.devboard.local/api/health
+- **Backend ready** : http://dev.devboard.local/api/ready
+- **Backend metrics** : http://dev.devboard.local/api/metrics
 
-## Monitoring (namespace: monitoring)
+---
+
+## 📊 Monitoring
 
 ### Grafana
-- **Service** : `prometheus-grafana.monitoring.svc.cluster.local`
-- **Port interne** : 80
-- **Accès** : Port-forward depuis ta machine locale
-  ```bash
-  export KUBECONFIG=/home/tom/Dev/projet-etude/infra/ansible/kubeconfig.yaml
-  kubectl port-forward -n monitoring svc/prometheus-grafana 3000:80
-  ```
-- **URL locale** : http://localhost:3000
+- **URL directe** : http://grafana.devboard.local
 - **Credentials** :
   - Username : `admin`
-  - Password : `admin` (ou récupérer via : `kubectl get secret -n monitoring prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d`)
+  - Password : `admin`
+- **Alternative (port-forward)** :
+  ```bash
+  kubectl port-forward -n monitoring svc/prometheus-grafana 3000:80
+  # Accès : http://localhost:3000
+  ```
 
 ### Prometheus
-- **Service** : `prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local`
-- **Port interne** : 9090
-- **Accès** :
+- **URL directe** : http://prometheus.devboard.local
+- **Alternative (port-forward)** :
   ```bash
   kubectl port-forward -n monitoring svc/prometheus-kube-prometheus-prometheus 9090:9090
+  # Accès : http://localhost:9090
   ```
-- **URL locale** : http://localhost:9090
 
 ### Alertmanager
-- **Service** : `prometheus-kube-prometheus-alertmanager.monitoring.svc.cluster.local`
-- **Port interne** : 9093
-- **Accès** :
+- **URL directe** : http://alertmanager.devboard.local
+- **Alternative (port-forward)** :
   ```bash
   kubectl port-forward -n monitoring svc/prometheus-kube-prometheus-alertmanager 9093:9093
+  # Accès : http://localhost:9093
   ```
-- **URL locale** : http://localhost:9093
 
 ### Loki (Logs)
-- **Service** : `loki.monitoring.svc.cluster.local`
-- **Port interne** : 3100
-- **Configuration Grafana** : Ajouter datasource Loki avec URL `http://loki.monitoring.svc.cluster.local:3100`
+- **Configuration Grafana** : 
+  - Aller dans Grafana → Configuration → Data Sources → Add data source → Loki
+  - URL : `http://loki.monitoring.svc.cluster.local:3100`
+  - Pas d'accès web direct (API uniquement)
 
-## Sécurité (namespace: security)
+---
+
+## 🔐 Sécurité
 
 ### Vault
-- **Service** : `vault.security.svc.cluster.local`
-- **Port interne** : 8200
-- **Mode** : dev (non-production)
-- **Token root** : `root`
-- **Accès** :
+- **URL directe** : http://vault.devboard.local
+- **Token root** : `root` (mode dev uniquement !)
+- **Alternative (port-forward)** :
   ```bash
   kubectl port-forward -n security svc/vault 8200:8200
+  # Accès : http://localhost:8200
   ```
-- **URL locale** : http://localhost:8200
 - **CLI Vault** :
   ```bash
-  export VAULT_ADDR=http://localhost:8200
+  export VAULT_ADDR=http://vault.devboard.local
   export VAULT_TOKEN=root
   vault kv list secret/devboard/
   ```
@@ -92,7 +88,43 @@ kubectl get pods -n devboard-dev
 - `secret/devboard/db` → Credentials PostgreSQL
 - `secret/devboard/jwt` → Secret JWT pour l'authentification
 
-## Accès SSH aux nœuds K3s
+---
+
+## Infrastructure K3s
+- **Cluster** : 3 nœuds (1 server + 2 agents)
+- **IP K3s Server** : `192.168.1.40`
+- **IP K3s Agent 1** : `192.168.1.41`
+- **IP K3s Agent 2** : `192.168.1.42`
+
+### Pods et services internes
+```bash
+kubectl get pods -n devboard-dev
+# devboard-backend    → API REST (port 8080)
+# devboard-frontend   → Interface React (port 80)
+# devboard-postgres   → Base de données PostgreSQL (port 5432)
+```
+
+---
+
+## Monitoring (namespace: monitoring)
+
+**Services internes** :
+
+- `prometheus-grafana.monitoring.svc.cluster.local:80`
+- `prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090`
+- `prometheus-kube-prometheus-alertmanager.monitoring.svc.cluster.local:9093`
+- `loki.monitoring.svc.cluster.local:3100`
+
+---
+
+## Sécurité (namespace: security)
+
+**Services internes** :
+- `vault.security.svc.cluster.local:8200`
+
+---
+
+## 🔧 Accès SSH aux nœuds K3s
 
 ```bash
 # Server
