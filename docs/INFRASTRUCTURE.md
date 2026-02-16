@@ -19,7 +19,7 @@ L'infrastructure DevBoard est déployée sur **Proxmox** avec **Terraform** pour
 │  │ K3s Server   │  │ K3s Agent 1  │  │ K3s Agent 2  │
 │  │ (Master)     │  │ (Worker)     │  │ (Worker)     │
 │  │              │  │              │  │              │
-│  │ 192.168.1.40 │  │ 192.168.1.41 │  │ 192.168.1.42 │
+│  │ 192.168.40.40 │  │ 192.168.40.41 │  │ 192.168.40.42 │
 │  │ 4 CPU        │  │ 4 CPU        │  │ 4 CPU        │
 │  │ 4096 MB RAM  │  │ 3072 MB RAM  │  │ 3072 MB RAM  │
 │  │ 32 GB Disk   │  │ 32 GB Disk   │  │ 32 GB Disk   │
@@ -42,9 +42,9 @@ Crée les containers LXC sur Proxmox via l'API.
 
 | VMID | Nom         | Rôle        | IP           | CPU | RAM  | Disk |
 |------|-------------|-------------|--------------|-----|------|------|
-| 400  | k3s-server  | Control Plane | 192.168.1.40 | 4   | 4GB  | 32GB |
-| 401  | k3s-agent-1 | Worker      | 192.168.1.41 | 4   | 3GB  | 32GB |
-| 402  | k3s-agent-2 | Worker      | 192.168.1.42 | 4   | 3GB  | 32GB |
+| 400  | k3s-server  | Control Plane | 192.168.40.40 | 4   | 4GB  | 32GB |
+| 401  | k3s-agent-1 | Worker      | 192.168.40.41 | 4   | 3GB  | 32GB |
+| 402  | k3s-agent-2 | Worker      | 192.168.40.42 | 4   | 3GB  | 32GB |
 
 ### ⚙️ Configuration LXC pour K3s
 
@@ -129,14 +129,14 @@ all:
     k3s_server:
       hosts:
         k3s-server:
-          ansible_host: 192.168.1.40
+          ansible_host: 192.168.40.40
 
     k3s_agents:
       hosts:
         k3s-agent-1:
-          ansible_host: 192.168.1.41
+          ansible_host: 192.168.40.41
         k3s-agent-2:
-          ansible_host: 192.168.1.42
+          ansible_host: 192.168.40.42
 ```
 
 ### 📜 Playbook 1 : Installation K3s
@@ -187,11 +187,11 @@ ansible-playbook -i inventory/dev.yml playbooks/deploy-tools.yml
 
 ```bash
 # Server K3s
-ssh root@192.168.1.40
+ssh root@192.168.40.40
 
 # Agents K3s
-ssh root@192.168.1.41
-ssh root@192.168.1.42
+ssh root@192.168.40.41
+ssh root@192.168.40.42
 ```
 
 ---
@@ -211,7 +211,7 @@ ssh root@192.168.1.42
 
 ```
 ┌──────────────────────────────────────────────────┐
-│            K3s Server (192.168.1.40)              │
+│            K3s Server (192.168.40.40)              │
 │  ┌────────────────────────────────────────────┐  │
 │  │  Control Plane                             │  │
 │  │  - API Server                              │  │
@@ -231,7 +231,7 @@ ssh root@192.168.1.42
           │                         │
 ┌─────────▼──────┐       ┌─────────▼──────┐
 │  K3s Agent 1   │       │  K3s Agent 2   │
-│ (192.168.1.41) │       │ (192.168.1.42) │
+│ (192.168.40.41) │       │ (192.168.40.42) │
 │                │       │                │
 │  - kubelet     │       │  - kubelet     │
 │  - containerd  │       │  - containerd  │
@@ -262,7 +262,7 @@ kubectl get pods -A
 
 #### Option 2 : Depuis le serveur K3s
 ```bash
-ssh root@192.168.1.40
+ssh root@192.168.40.40
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 kubectl get pods -A
 ```
@@ -324,7 +324,7 @@ Voir [INGRESS-ROUTING-EXPLAINED.md](INGRESS-ROUTING-EXPLAINED.md) pour les déta
 
 **Solution** :
 ```bash
-ssh root@192.168.1.40
+ssh root@192.168.40.40
 ln -sf /dev/console /dev/kmsg
 systemctl restart k3s
 ```
@@ -362,7 +362,7 @@ pct stop 400 && pct start 400
    ```
 3. Test curl :
    ```bash
-   curl -H "Host: grafana.devboard.local" http://192.168.1.40
+   curl -H "Host: grafana.devboard.local" http://192.168.40.40
    ```
 
 ---
@@ -373,19 +373,19 @@ pct stop 400 && pct start 400
 
 ```bash
 # Sur le server
-ssh root@192.168.1.40
+ssh root@192.168.40.40
 curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=vX.XX.X+k3s1 sh -
 
 # Sur les agents
-ssh root@192.168.1.41
-curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=vX.XX.X+k3s1 K3S_URL=https://192.168.1.40:6443 K3S_TOKEN=<token> sh -
+ssh root@192.168.40.41
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=vX.XX.X+k3s1 K3S_URL=https://192.168.40.40:6443 K3S_TOKEN=<token> sh -
 ```
 
 ### Sauvegarder le cluster
 
 ```bash
 # Sauvegarder etcd (données K3s)
-ssh root@192.168.1.40
+ssh root@192.168.40.40
 k3s etcd-snapshot save
 
 # Sauvegarder les manifests
@@ -396,7 +396,7 @@ kubectl get all -A -o yaml > backup-k8s-resources.yaml
 
 ```bash
 # Redémarrer K3s
-ssh root@192.168.1.40 "systemctl restart k3s"
+ssh root@192.168.40.40 "systemctl restart k3s"
 
 # Redémarrer un deployment
 kubectl rollout restart deployment <name> -n <namespace>
@@ -414,7 +414,7 @@ kubectl top nodes
 kubectl top pods -A
 
 # Logs d'un service K3s
-ssh root@192.168.1.40 "journalctl -u k3s.service -f"
+ssh root@192.168.40.40 "journalctl -u k3s.service -f"
 
 # Kubeconfig
 export KUBECONFIG=/home/tom/Dev/projet-etude/infra/ansible/kubeconfig.yaml
@@ -424,7 +424,7 @@ helm list -A
 helm upgrade --install <release> <chart> -f values.yaml -n <namespace>
 
 # Images dans K3s
-ssh root@192.168.1.40 "k3s ctr images ls"
+ssh root@192.168.40.40 "k3s ctr images ls"
 ```
 
 ---

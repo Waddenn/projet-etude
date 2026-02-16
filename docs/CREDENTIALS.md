@@ -78,20 +78,20 @@ postgres://devboard:devboard-secret@devboard-postgres:5432/devboard?sslmode=disa
 
 #### K3s Server (Control Plane)
 ```bash
-ssh root@192.168.1.40
+ssh root@192.168.40.40
 ```
 
 #### K3s Agent 1 (Worker)
 ```bash
-ssh root@192.168.1.41
+ssh root@192.168.40.41
 ```
 
 #### K3s Agent 2 (Worker)
 ```bash
-ssh root@192.168.1.42
+ssh root@192.168.40.42
 ```
 
-**Note** : Authentification par clé SSH (configurée via Terraform/Ansible)
+**Note** : Authentification pil clé SSH (configurée via Terraform/Ansible)
 
 ---
 
@@ -162,11 +162,11 @@ kubectl get secret devboard-secrets -n devboard-dev -o json | \
 
 ```bash
 # Ajouter ces lignes dans /etc/hosts
-192.168.1.40 dev.devboard.local
-192.168.1.40 grafana.devboard.local
-192.168.1.40 prometheus.devboard.local
-192.168.1.40 alertmanager.devboard.local
-192.168.1.40 vault.devboard.local
+192.168.40.40 dev.devboard.local
+192.168.40.40 grafana.devboard.local
+192.168.40.40 prometheus.devboard.local
+192.168.40.40 alertmanager.devboard.local
+192.168.40.40 vault.devboard.local
 ```
 
 **Commande rapide** :
@@ -174,11 +174,11 @@ kubectl get secret devboard-secrets -n devboard-dev -o json | \
 sudo bash -c 'cat >> /etc/hosts << EOF
 
 # DevBoard K3s Services
-192.168.1.40 dev.devboard.local
-192.168.1.40 grafana.devboard.local
-192.168.1.40 prometheus.devboard.local
-192.168.1.40 alertmanager.devboard.local
-192.168.1.40 vault.devboard.local
+192.168.40.40 dev.devboard.local
+192.168.40.40 grafana.devboard.local
+192.168.40.40 prometheus.devboard.local
+192.168.40.40 alertmanager.devboard.local
+192.168.40.40 vault.devboard.local
 EOF'
 ```
 
@@ -209,7 +209,7 @@ kubectl get pods -A
 ### Kubeconfig sur le serveur K3s
 
 ```bash
-ssh root@192.168.1.40
+ssh root@192.168.40.40
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 kubectl get nodes
 ```
@@ -294,7 +294,7 @@ open http://dev.devboard.local
 open http://prometheus.devboard.local
 
 # SSH K3s server
-ssh root@192.168.1.40
+ssh root@192.168.40.40
 
 # Kubectl
 export KUBECONFIG=/home/tom/Dev/projet-etude/infra/ansible/kubeconfig.yaml
