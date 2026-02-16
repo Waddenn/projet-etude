@@ -26,16 +26,26 @@ spec:
                       storage: 10Gi
         
         grafana:
-          adminPassword: __GRAFANA_ADMIN_PASSWORD__
+          adminPassword: admin # Should be changed via secret in production
           persistence:
             enabled: true
             size: 5Gi
           ingress:
             enabled: true
             ingressClassName: traefik
+            annotations:
+              cert-manager.io/cluster-issuer: selfsigned-issuer
             hosts:
               - grafana.devboard.local
             path: /
+          additionalDataSources:
+            - name: Loki
+              type: loki
+              access: proxy
+              url: http://loki-stack:3100
+              isDefault: false
+              jsonData:
+                maxLines: 1000
         
         alertmanager:
           enabled: true
