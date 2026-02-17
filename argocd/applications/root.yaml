@@ -6,14 +6,14 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: devboard
   source:
     repoURL: https://github.com/Waddenn/projet-etude.git
     targetRevision: main
     path: argocd/applications
     directory:
       recurse: false
-      include: "*.yaml"
+      include: "{devboard-app.yaml,ingress-services.yaml,loki-stack.yaml,monitoring-stack.yaml,vault.yaml}"
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -23,6 +23,9 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      - ServerSideApply=true
   ignoreDifferences:
     - group: argoproj.io
       kind: Application

@@ -12,6 +12,10 @@
   become: true
   vars_files:
     - "{{ playbook_dir }}/../group_vars/all.yml"
+  vars:
+    argocd_wait_initial_sync: "{{ (lookup('env', 'ARGOCD_WAIT_INITIAL_SYNC') | default('false', true) | lower) in ['1', 'true', 'yes', 'on'] }}"
+    argocd_sync_retries: "{{ lookup('env', 'ARGOCD_SYNC_RETRIES') | default('12', true) | int }}"
+    argocd_sync_delay: "{{ lookup('env', 'ARGOCD_SYNC_DELAY') | default('10', true) | int }}"
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   # vars: argocd_version, argocd_namespace, project_repo → group_vars/all.yml
@@ -133,14 +137,22 @@
       shell: |
         kubectl get applications -n {{ argocd_namespace }} -o jsonpath='{range .items[*]}{.metadata.name}: {.status.sync.status}{"\n"}{end}'
       register: sync_status
-      retries: 30
-      delay: 20
-      until: "'OutOfSync' not in sync_status.stdout"
+      retries: "{{ argocd_sync_retries }}"
+      delay: "{{ argocd_sync_delay }}"
+      until: "'OutOfSync' not in sync_status.stdout and 'Unknown' not in sync_status.stdout"
+      changed_when: false
       failed_when: false
+      when: argocd_wait_initial_sync
+
+    - name: Skip initial sync wait (fast path)
+      debug:
+        msg: "Skipping initial ArgoCD sync wait. Set ARGOCD_WAIT_INITIAL_SYNC=true for strict mode."
+      when: not argocd_wait_initial_sync
 
     - name: Display final sync status
       debug:
         msg: "{{ sync_status.stdout_lines }}"
+      when: argocd_wait_initial_sync
 
     # ─── Save credentials ────────────────────────────────────────
     - name: Save ArgoCD credentials locally
