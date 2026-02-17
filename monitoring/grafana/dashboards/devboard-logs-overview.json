@@ -467,8 +467,8 @@
       {
         "current": {
           "selected": true,
-          "text": "default",
-          "value": "default"
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": {
           "type": "loki",
@@ -476,7 +476,7 @@
         },
         "definition": "label_values(namespace)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "Namespace",
         "multi": false,
         "name": "namespace",
@@ -486,7 +486,8 @@
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
-        "type": "query"
+        "type": "query",
+        "allValue": ".*"
       },
       {
         "current": {
