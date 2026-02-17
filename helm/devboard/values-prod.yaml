@@ -52,5 +52,12 @@ ingress:
 certManager:
   enabled: true
 
+# Secrets keys (values injected at deploy time for sensitive fields)
+secrets:
+  dbUsername: devboard
+  dbName: devboard
+  # dbPassword: injected via ArgoCD/secret manager
+  # jwtSecret: injected via ArgoCD/secret manager
+
 networkPolicies:
   enabled: true
