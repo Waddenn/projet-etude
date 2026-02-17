@@ -381,7 +381,7 @@ Les credentials sont stockés dans **Vault** :
 ```bash
 # Lire les secrets depuis Vault
 export VAULT_ADDR=http://vault.devboard.local
-export VAULT_TOKEN=<voir .env.secrets → VAULT_DEV_ROOT_TOKEN>
+export VAULT_TOKEN=root
 vault kv get secret/devboard/db
 
 # Les valeurs sont générées par make generate-secrets

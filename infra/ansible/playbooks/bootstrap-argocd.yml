@@ -107,7 +107,6 @@
         db_password: "{{ (secrets_file.content | b64decode | regex_search('DB_PASSWORD=(.+)', '\\1'))[0] | default('changeme') }}"
         jwt_secret: "{{ (secrets_file.content | b64decode | regex_search('JWT_SECRET=(.+)', '\\1'))[0] | default('changeme') }}"
         grafana_admin_password: "{{ (secrets_file.content | b64decode | regex_search('GRAFANA_ADMIN_PASSWORD=(.+)', '\\1'))[0] | default('admin') }}"
-        vault_dev_root_token: "{{ (secrets_file.content | b64decode | regex_search('VAULT_DEV_ROOT_TOKEN=(.+)', '\\1'))[0] | default('root') }}"
       when: secrets_file.content is defined
 
     - name: Set fallback secrets if .env.secrets not found
@@ -117,8 +116,11 @@
         db_password: "changeme"
         jwt_secret: "changeme-jwt-secret-minimum-32-chars"
         grafana_admin_password: "admin"
-        vault_dev_root_token: "root"
       when: secrets_file.content is not defined
+
+    - name: Set deterministic Vault dev root token
+      set_fact:
+        vault_dev_root_token: "root"
 
     - name: Create or update Vault token secret for External Secrets operator
       shell: |
@@ -132,7 +134,6 @@
       shell: |
         cd /tmp/argocd-apps/
         sed -i 's|__GRAFANA_ADMIN_PASSWORD__|{{ grafana_admin_password }}|g' *.yaml
-        sed -i 's|__VAULT_DEV_ROOT_TOKEN__|{{ vault_dev_root_token }}|g' *.yaml
 
     - name: Apply ArgoCD applications
       shell: kubectl apply -f /tmp/argocd-apps/
