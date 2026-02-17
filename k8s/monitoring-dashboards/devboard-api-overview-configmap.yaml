@@ -9,16 +9,6 @@ metadata:
 data:
   devboard-api-overview.json: |
     {
-      "__inputs": [
-        {
-          "name": "DS_PROMETHEUS",
-          "label": "Prometheus",
-          "description": "",
-          "type": "datasource",
-          "pluginId": "prometheus",
-          "pluginName": "Prometheus"
-        }
-      ],
       "annotations": {
         "list": [
           {
@@ -44,7 +34,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -100,7 +90,11 @@ data:
               "expr": "sum(rate(http_requests_total{namespace=~\"$namespace\"}[5m]))",
               "legendFormat": "QPS",
               "range": true,
-              "refId": "A"
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              }
             }
           ],
           "title": "Request Rate",
@@ -109,7 +103,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -165,7 +159,11 @@ data:
               "expr": "100 * sum(rate(http_requests_total{status=~\"5..\",namespace=~\"$namespace\"}[5m])) / clamp_min(sum(rate(http_requests_total{namespace=~\"$namespace\"}[5m])), 1e-9)",
               "legendFormat": "5xx %",
               "range": true,
-              "refId": "A"
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              }
             }
           ],
           "title": "5xx Error Rate",
@@ -174,7 +172,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -230,7 +228,11 @@ data:
               "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{namespace=~\"$namespace\"}[5m])))",
               "legendFormat": "P95",
               "range": true,
-              "refId": "A"
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              }
             }
           ],
           "title": "P95 Latency",
@@ -239,7 +241,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -295,7 +297,11 @@ data:
               "expr": "sum(go_goroutines{namespace=~\"$namespace\"})",
               "legendFormat": "goroutines",
               "range": true,
-              "refId": "A"
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              }
             }
           ],
           "title": "Goroutines",
@@ -304,7 +310,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -384,7 +390,11 @@ data:
               "expr": "sum by (path, status) (rate(http_requests_total{namespace=~\"$namespace\"}[5m]))",
               "legendFormat": "{{path}} {{status}}",
               "range": true,
-              "refId": "A"
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              }
             }
           ],
           "title": "Requests by Path and Status",
@@ -393,7 +403,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -445,7 +455,11 @@ data:
               "expr": "topk(5, histogram_quantile(0.95, sum by (path, le) (rate(http_request_duration_seconds_bucket{namespace=~\"$namespace\"}[5m]))))",
               "legendFormat": "{{path}}",
               "range": true,
-              "refId": "A"
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              }
             }
           ],
           "title": "Top 5 Slow Endpoints (P95)",
@@ -454,7 +468,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -506,7 +520,11 @@ data:
               "expr": "sum by (pod) (go_memstats_alloc_bytes{namespace=~\"$namespace\"})",
               "legendFormat": "{{pod}}",
               "range": true,
-              "refId": "A"
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              }
             }
           ],
           "title": "Go Allocated Memory",
@@ -524,6 +542,18 @@ data:
       "templating": {
         "list": [
           {
+            "name": "datasource",
+            "label": "Datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "hide": 0,
+            "current": {
+              "selected": true,
+              "text": "default",
+              "value": "default"
+            }
+          },
+          {
             "current": {
               "selected": true,
               "text": "default",
@@ -531,7 +561,7 @@ data:
             },
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "${datasource}"
             },
             "definition": "label_values(up, namespace)",
             "hide": 0,

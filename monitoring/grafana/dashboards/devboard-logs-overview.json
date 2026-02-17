@@ -1,14 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_LOKI",
-      "label": "Loki",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "loki",
-      "pluginName": "Loki"
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -34,7 +24,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "${DS_LOKI}"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -89,7 +79,11 @@
           "expr": "sum(rate({namespace=~\"$namespace\"}[5m]))",
           "legendFormat": "lines/s",
           "queryType": "range",
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          }
         }
       ],
       "title": "Log Throughput",
@@ -98,7 +92,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "${DS_LOKI}"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -153,7 +147,11 @@
           "expr": "sum(rate({namespace=~\"$namespace\"} |= \"error\" [5m]))",
           "legendFormat": "errors/s",
           "queryType": "range",
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          }
         }
       ],
       "title": "Error Throughput",
@@ -162,7 +160,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "${DS_LOKI}"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -217,7 +215,11 @@
           "expr": "sum(rate({namespace=~\"$namespace\"} |~ \"(?i)panic|fatal\" [5m]))",
           "legendFormat": "panic/fatal/s",
           "queryType": "range",
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          }
         }
       ],
       "title": "Panic/Fatal Throughput",
@@ -226,7 +228,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "${DS_LOKI}"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -273,7 +275,11 @@
           "expr": "count_over_time({namespace=~\"$namespace\"} [5m])",
           "legendFormat": "total lines/5m",
           "queryType": "range",
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          }
         }
       ],
       "title": "Total Lines (5m)",
@@ -282,7 +288,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "${DS_LOKI}"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -329,7 +335,11 @@
           "expr": "sum by (pod) (rate({namespace=~\"$namespace\"}[5m]))",
           "legendFormat": "{{pod}}",
           "queryType": "range",
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          }
         }
       ],
       "title": "Log Throughput by Pod",
@@ -338,7 +348,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "${DS_LOKI}"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -385,7 +395,11 @@
           "expr": "sum by (pod) (rate({namespace=~\"$namespace\"} |= \"error\" [5m]))",
           "legendFormat": "{{pod}}",
           "queryType": "range",
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          }
         }
       ],
       "title": "Error Throughput by Pod",
@@ -394,7 +408,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "${DS_LOKI}"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 10,
@@ -417,7 +431,11 @@
         {
           "expr": "{namespace=~\"$namespace\", pod=~\"$pod\"} |= \"$search\"",
           "queryType": "range",
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          }
         }
       ],
       "title": "Live Logs",
@@ -435,6 +453,18 @@
   "templating": {
     "list": [
       {
+        "name": "datasource",
+        "label": "Datasource",
+        "type": "datasource",
+        "query": "loki",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": "Loki",
+          "value": "Loki"
+        }
+      },
+      {
         "current": {
           "selected": true,
           "text": "default",
@@ -442,7 +472,7 @@
         },
         "datasource": {
           "type": "loki",
-          "uid": "${DS_LOKI}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(namespace)",
         "hide": 0,
@@ -466,7 +496,7 @@
         },
         "datasource": {
           "type": "loki",
-          "uid": "${DS_LOKI}"
+          "uid": "${datasource}"
         },
         "definition": "label_values({namespace=~\"$namespace\"}, pod)",
         "hide": 0,
