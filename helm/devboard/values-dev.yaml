@@ -50,6 +50,8 @@ certManager:
 #   --set secrets.dbPassword=xxx --set secrets.jwtSecret=xxx
 # Or use ArgoCD + Vault/SealedSecrets for automated injection.
 secrets:
+  create: false
+  name: devboard-secrets
   dbUsername: devboard
   dbName: devboard
   # dbPassword: → provided via --set or Vault

@@ -6,6 +6,7 @@ metadata:
     app: devboard
     component: backend
 spec:
+  {{- $secretName := (default (printf "%s-secrets" .Release.Name) .Values.secrets.name) }}
   replicas: {{ .Values.backend.replicas }}
   selector:
     matchLabels:
@@ -39,7 +40,7 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
+                  name: {{ $secretName }}
                   key: database-url
           resources:
             {{- toYaml .Values.backend.resources | nindent 12 }}

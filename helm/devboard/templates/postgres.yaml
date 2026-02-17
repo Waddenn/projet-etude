@@ -6,6 +6,7 @@ metadata:
     app: devboard
     component: postgres
 spec:
+  {{- $secretName := (default (printf "%s-secrets" .Release.Name) .Values.secrets.name) }}
   serviceName: {{ .Release.Name }}-postgres
   replicas: 1
   selector:
@@ -30,12 +31,12 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
+                  name: {{ $secretName }}
                   key: db-username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
+                  name: {{ $secretName }}
                   key: db-password
             - name: POSTGRES_DB
               value: devboard

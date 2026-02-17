@@ -54,6 +54,8 @@ certManager:
 
 # Secrets keys (values injected at deploy time for sensitive fields)
 secrets:
+  create: false
+  name: devboard-secrets
   dbUsername: devboard
   dbName: devboard
   # dbPassword: injected via ArgoCD/secret manager

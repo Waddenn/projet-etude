@@ -51,6 +51,17 @@ make lint          # Linter le code
 make scan          # Scanner les images avec Trivy
 make benchmark     # Lancer un test de charge
 make infra-up      # Déployer le cluster K3s complet
+make sync-k8s-secrets # Synchroniser les secrets runtime K8s depuis .env.secrets
+```
+
+## Gestion des secrets (GitOps)
+
+- Les secrets applicatifs ne sont plus injectés dans les manifests ArgoCD.
+- L'application Helm utilise un secret Kubernetes externe : `devboard-secrets`.
+- Pour (re)générer ce secret depuis `.env.secrets` :
+
+```bash
+make sync-k8s-secrets
 ```
 
 ## Architecture
