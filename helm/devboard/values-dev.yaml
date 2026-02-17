@@ -30,7 +30,8 @@ frontend:
 
 postgres:
   image: postgres:16-alpine
-  storage: 1Gi
+  # Keep aligned with existing PVC size unless you recreate the StatefulSet.
+  storage: 5Gi
 
 ingress:
   enabled: true
