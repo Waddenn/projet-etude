@@ -138,7 +138,7 @@ generate-secrets: ## Generate .env.secrets with random passwords
 		"JWT_SECRET=$$(openssl rand -base64 48 | tr -d '/+=')" \
 		'' \
 		"GRAFANA_ADMIN_PASSWORD=$$(openssl rand -base64 16 | tr -d '/+=')" \
-		"VAULT_DEV_ROOT_TOKEN=$$(openssl rand -base64 24 | tr -d '/+=')" \
+		"VAULT_DEV_ROOT_TOKEN=root" \
 		> .env.secrets
 	@chmod 600 .env.secrets
 	@echo "Generated .env.secrets — fill in PROXMOX_PASSWORD and LXC_ROOT_PASSWORD"
