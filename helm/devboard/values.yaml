@@ -2,25 +2,8 @@ backend:
   image:
     repository: ghcr.io/waddenn/projet-etude/backend
     tag: latest
-  replicas: 2
-  resources:
-    requests:
-      cpu: 100m
-      memory: 64Mi
-    limits:
-      cpu: 500m
-      memory: 256Mi
-  hpa:
-    enabled: true
-    minReplicas: 2
-    maxReplicas: 5
-    targetCPU: 70
-
-frontend:
-  image:
-    repository: ghcr.io/waddenn/projet-etude/frontend
-    tag: latest
-  replicas: 2
+    pullPolicy: IfNotPresent
+  replicas: 1
   resources:
     requests:
       cpu: 50m
@@ -28,6 +11,25 @@ frontend:
     limits:
       cpu: 200m
       memory: 128Mi
+  hpa:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPU: 70
+
+frontend:
+  image:
+    repository: ghcr.io/waddenn/projet-etude/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    requests:
+      cpu: 25m
+      memory: 16Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
 
 postgres:
   image: postgres:16-alpine
@@ -53,4 +55,4 @@ certManager:
   enabled: false
 
 networkPolicies:
-  enabled: true
+  enabled: false
