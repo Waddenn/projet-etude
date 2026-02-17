@@ -2,7 +2,8 @@
         infra-init infra-plan infra-apply infra-destroy infra-up \
         infra-up-strict \
         ansible-fix-lxc ansible-prepare ansible-k3s ansible-argocd \
-        generate-secrets setup seed benchmark vault-init argocd-sync dns-setup verify sync-k8s-secrets
+        generate-secrets setup seed benchmark vault-init argocd-sync dns-setup verify \
+        sync-k8s-secrets sync-vault-secrets
 
 include config.env
 ANSIBLE_FLAGS ?= --forks 20
@@ -162,15 +163,13 @@ seed: ## Seed database with sample data
 		echo "  Created: $$(echo $$p | grep -o '"name":"[^"]*"' | cut -d'"' -f4)"; \
 	done
 
-sync-k8s-secrets: ## Sync devboard-secrets in K8s from .env.secrets (GitOps-friendly)
-	@. ./.env.secrets && \
-	kubectl create namespace default --dry-run=client -o yaml | kubectl apply -f - && \
-	kubectl create secret generic devboard-secrets -n default \
-		--from-literal=db-username="$${DB_USERNAME:-devboard}" \
-		--from-literal=db-password="$$DB_PASSWORD" \
-		--from-literal=database-url="postgres://$${DB_USERNAME:-devboard}:$$DB_PASSWORD@devboard-app-postgres:5432/$${DB_NAME:-devboard}?sslmode=disable" \
-		--from-literal=jwt-secret="$$JWT_SECRET" \
-		--dry-run=client -o yaml | kubectl apply -f -
+sync-vault-secrets: ## Sync .env.secrets to Vault and refresh ExternalSecret
+	@$(MAKE) vault-init
+	@kubectl annotate externalsecret devboard-secrets -n default force-sync=$$(date +%s) --overwrite >/dev/null 2>&1 || true
+
+sync-k8s-secrets: ## Backward-compatible alias (Vault is the source of truth)
+	@echo "sync-k8s-secrets is deprecated; using Vault as source of truth."
+	@$(MAKE) sync-vault-secrets
 
 benchmark: ## Load test (requires hey: go install github.com/rakyll/hey@latest)
 	hey -z $${DURATION:-30s} -c $${CONCURRENCY:-50} $${TARGET_URL:-http://localhost:8080}/api/v1/projects

@@ -120,15 +120,12 @@
         vault_dev_root_token: "root"
       when: secrets_file.content is not defined
 
-    - name: Create or update runtime secret for DevBoard app
+    - name: Create or update Vault token secret for External Secrets operator
       shell: |
-        kubectl create namespace default --dry-run=client -o yaml | kubectl apply -f -
-        kubectl create secret generic devboard-secrets \
-          -n default \
-          --from-literal=db-username='{{ db_username }}' \
-          --from-literal=db-password='{{ db_password }}' \
-          --from-literal=database-url='postgres://{{ db_username }}:{{ db_password }}@devboard-app-postgres:5432/{{ db_name }}?sslmode=disable' \
-          --from-literal=jwt-secret='{{ jwt_secret }}' \
+        kubectl create namespace external-secrets --dry-run=client -o yaml | kubectl apply -f -
+        kubectl create secret generic vault-token \
+          -n external-secrets \
+          --from-literal=token='{{ vault_dev_root_token }}' \
           --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Inject secrets into ArgoCD application manifests
@@ -144,6 +141,31 @@
     - name: Display applied applications
       debug:
         msg: "{{ apps_result.stdout_lines }}"
+
+    - name: Copy Vault policy to server
+      copy:
+        src: "{{ playbook_dir }}/../../../security/vault/policies/devboard-policy.hcl"
+        dest: /tmp/devboard-policy.hcl
+        mode: "0644"
+
+    - name: Wait for Vault pod to become Ready
+      shell: kubectl wait --for=condition=Ready pod -n security -l app.kubernetes.io/name=vault --timeout=300s
+      register: vault_wait
+      changed_when: false
+      failed_when: false
+
+    - name: Seed DevBoard secrets in Vault (single source of truth)
+      shell: |
+        VAULT_POD="$(kubectl get pod -n security -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')"
+        kubectl cp /tmp/devboard-policy.hcl security/${VAULT_POD}:/tmp/devboard-policy.hcl
+        kubectl exec -n security "${VAULT_POD}" -- sh -c "\
+          export VAULT_ADDR=http://127.0.0.1:8200 && \
+          vault secrets enable -path=secret kv-v2 2>/dev/null || true && \
+          vault kv put secret/devboard/db username='{{ db_username }}' password='{{ db_password }}' host='devboard-app-postgres' port=5432 database='{{ db_name }}' && \
+          vault kv put secret/devboard/jwt secret='{{ jwt_secret }}' && \
+          vault policy write devboard /tmp/devboard-policy.hcl \
+        "
+      when: vault_wait.rc == 0
 
     # ─── Wait for initial sync ───────────────────────────────────
     - name: Wait for ArgoCD applications to sync (initial)
