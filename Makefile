@@ -182,6 +182,7 @@ vault-init: ## Initialize Vault with secrets from .env.secrets
 		vault secrets enable -path=secret kv-v2 2>/dev/null; \
 		vault kv put secret/devboard/db username=$${DB_USERNAME} password=$${DB_PASSWORD} host=postgres port=5432 database=$${DB_NAME} && \
 		vault kv put secret/devboard/jwt secret=$${JWT_SECRET} && \
+		vault kv put secret/devboard/grafana adminUser=admin adminPassword=$${GRAFANA_ADMIN_PASSWORD} && \
 		vault policy write devboard /tmp/devboard-policy.hcl && \
 		vault auth enable kubernetes 2>/dev/null; \
 		vault write auth/kubernetes/config kubernetes_host=https://kubernetes.default.svc && \
