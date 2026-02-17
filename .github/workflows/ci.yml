@@ -43,6 +43,81 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
       - run: cd infra/terraform && terraform fmt -check -recursive
 
+  # ─── GitOps Validation ───────────────────────────────────────
+  validate-gitops:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: azure/setup-helm@v4
+      - name: Helm lint and render (dev/prod)
+        run: |
+          helm lint helm/devboard -f helm/devboard/values.yaml -f helm/devboard/values-dev.yaml
+          helm lint helm/devboard -f helm/devboard/values.yaml -f helm/devboard/values-prod.yaml
+          helm template devboard-dev helm/devboard -f helm/devboard/values.yaml -f helm/devboard/values-dev.yaml > /tmp/devboard-dev.yaml
+          helm template devboard-prod helm/devboard -f helm/devboard/values.yaml -f helm/devboard/values-prod.yaml > /tmp/devboard-prod.yaml
+      - name: Validate rendered manifests with kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar -xz
+          sudo mv kubeconform /usr/local/bin/kubeconform
+          kubeconform -strict -summary -ignore-missing-schemas /tmp/devboard-dev.yaml
+          kubeconform -strict -summary -ignore-missing-schemas /tmp/devboard-prod.yaml
+      - name: Validate repo manifests with kubeconform
+        run: |
+          find argocd k8s -type f -name '*.yaml' -print0 | xargs -0 kubeconform -strict -summary -ignore-missing-schemas
+      - name: Block placeholder registries in Helm values
+        run: |
+          if grep -RIn 'ghcr.io/votre-groupe' helm/devboard/values*.yaml; then
+            echo "::error::Placeholder registry detected in Helm values files."
+            exit 1
+          fi
+      - name: Guard immutable PostgreSQL StatefulSet fields
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          if [[ -z "${BASE_SHA}" || "${BASE_SHA}" == "0000000000000000000000000000000000000000" ]]; then
+            BASE_SHA="$(git rev-list --max-parents=0 HEAD)"
+          fi
+
+          extract_storage() {
+            awk '
+              $1 == "postgres:" { in_postgres = 1; next }
+              in_postgres && $1 ~ /^[A-Za-z0-9_-]+:/ { in_postgres = 0 }
+              in_postgres && $1 == "storage:" { print $2; exit }
+            '
+          }
+
+          immutable_change=0
+          for f in helm/devboard/values.yaml helm/devboard/values-dev.yaml helm/devboard/values-prod.yaml; do
+            if git diff --name-only "${BASE_SHA}" HEAD -- "${f}" | grep -q .; then
+              old_storage="$(git show "${BASE_SHA}:${f}" 2>/dev/null | extract_storage || true)"
+              new_storage="$(extract_storage < "${f}" || true)"
+              if [[ -n "${old_storage}" && -n "${new_storage}" && "${old_storage}" != "${new_storage}" ]]; then
+                echo "::error file=${f}::postgres.storage changed from ${old_storage} to ${new_storage}. This is immutable for existing StatefulSet PVC templates."
+                immutable_change=1
+              fi
+            fi
+          done
+
+          if git diff --name-only "${BASE_SHA}" HEAD -- helm/devboard/templates/postgres.yaml | grep -q .; then
+            if git diff "${BASE_SHA}" HEAD -- helm/devboard/templates/postgres.yaml | grep -Eq '^[+-].*(volumeClaimTemplates|serviceName:|selector:|matchLabels:|name:[[:space:]]*postgres-data|accessModes:|storage:)'; then
+              echo "::error file=helm/devboard/templates/postgres.yaml::Potential immutable StatefulSet field change detected."
+              immutable_change=1
+            fi
+          fi
+
+          if [[ "${immutable_change}" -ne 0 ]]; then
+            echo "::error::Use a migration playbook (new StatefulSet/PVC) instead of in-place immutable spec updates."
+            exit 1
+          fi
+
   # ─── Test ─────────────────────────────────────────────────────
   test-backend:
     runs-on: ubuntu-latest
@@ -195,4 +270,3 @@ jobs:
   # NOTE: Manual deployment jobs (deploy-dev, deploy-staging, deploy-prod) 
   # have been removed. Deployment is now handled automatically by 
   # ArgoCD Image Updater (Pull-based GitOps).
-
