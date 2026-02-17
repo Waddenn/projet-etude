@@ -11,6 +11,7 @@ argocd/
 └── applications/
     ├── devboard-app.yaml          # Application principale (backend + frontend + postgres)
     ├── monitoring-stack.yaml      # Prometheus + Grafana
+    ├── monitoring-dashboards.yaml # Dashboards Grafana (ConfigMaps)
     ├── loki-stack.yaml            # Loki + Promtail (logs)
     └── vault.yaml                 # HashiCorp Vault (secrets)
 ```

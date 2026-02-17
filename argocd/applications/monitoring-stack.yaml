@@ -51,6 +51,15 @@ spec:
               isDefault: false
               jsonData:
                 maxLines: 1000
+          sidecar:
+            dashboards:
+              enabled: true
+              label: grafana_dashboard
+              labelValue: "1"
+              searchNamespace: monitoring
+              provider:
+                allowUiUpdates: false
+                foldersFromFilesStructure: true
         
         alertmanager:
           enabled: true

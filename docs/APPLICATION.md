@@ -82,7 +82,7 @@ app/backend/
 |---------|---------------------|--------------------------------|-------------------|
 | GET     | `/api/health`       | Health check                   | `{"status":"ok"}` |
 | GET     | `/api/ready`        | Readiness check (BDD)          | `{"status":"ready"}` |
-| GET     | `/api/metrics`      | Métriques Prometheus           | Format Prometheus |
+| GET     | `/metrics`      | Métriques Prometheus           | Format Prometheus |
 | GET     | `/api/projects`     | Liste tous les projets         | JSON array        |
 | GET     | `/api/projects/:id` | Détail d'un projet             | JSON object       |
 | POST    | `/api/projects`     | Créer un nouveau projet        | JSON object       |
@@ -119,17 +119,16 @@ require (
 
 ### 📈 Métriques exposées
 
-Le backend expose des métriques Prometheus sur `/api/metrics` :
+Le backend expose des métriques Prometheus sur `/metrics` :
 
 ```prometheus
 # Requêtes HTTP totales
-http_requests_total{method="GET",endpoint="/api/projects",status="200"}
+http_requests_total{method="GET",path="/api/v1/projects",status="200"}
 
 # Durée des requêtes HTTP (histogramme)
-http_request_duration_seconds{method="GET",endpoint="/api/projects"}
-
-# Requêtes en cours
-http_requests_in_progress{method="GET",endpoint="/api/projects"}
+http_request_duration_seconds_bucket{method="GET",path="/api/v1/projects",le="0.1"}
+http_request_duration_seconds_sum{method="GET",path="/api/v1/projects"}
+http_request_duration_seconds_count{method="GET",path="/api/v1/projects"}
 
 # Métriques Go standards
 go_goroutines
@@ -512,7 +511,7 @@ Voir [CI-CD.md](CI-CD.md) pour les détails du pipeline GitHub Actions.
 
 ### 📊 Métriques Prometheus
 
-Le backend expose des métriques sur `/api/metrics` :
+Le backend expose des métriques sur `/metrics` :
 - Nombre de requêtes HTTP
 - Latence des requêtes (histogramme)
 - Taux d'erreur
@@ -524,7 +523,7 @@ Le backend expose des métriques sur `/api/metrics` :
 
 Les logs sont collectés par **Promtail** et centralisés dans **Loki**.
 
-Accès dans Grafana → Explore → Loki → `{namespace="devboard-dev"}`
+Accès dans Grafana → Explore → Loki → `{namespace="default"}`
 
 ### 🚨 Alertes
 

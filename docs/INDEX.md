@@ -121,10 +121,10 @@ http://vault.devboard.local        # Vault (voir .env.secrets)
 
 ```bash
 # Voir les métriques Prometheus
-curl http://dev.devboard.local/api/metrics
+curl http://dev.devboard.local/metrics
 
 # Logs avec Loki (dans Grafana Explore)
-{namespace="devboard-dev"}
+{namespace="default"}
 
 # Health check
 curl http://dev.devboard.local/api/health

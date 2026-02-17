@@ -64,7 +64,7 @@ Collecte, stocke et expose les métriques de tous les composants du système.
 
 | Source                | Type              | Endpoint                  | Description                    |
 |-----------------------|-------------------|---------------------------|--------------------------------|
-| **DevBoard Backend**  | Application       | `:8080/api/metrics`       | Métriques app (requêtes, latence) |
+| **DevBoard Backend**  | Application       | `:8080/metrics`       | Métriques app (requêtes, latence) |
 | **Node Exporters**    | Infrastructure    | `:9100/metrics`           | CPU, RAM, disk des nœuds K3s   |
 | **Kube State Metrics**| Kubernetes        | `:8080/metrics`           | État des ressources K8s        |
 | **cAdvisor**          | Containers        | `:4194/metrics`           | Métriques des containers       |
@@ -90,7 +90,7 @@ spec:
       component: backend
   endpoints:
     - port: http
-      path: /api/metrics
+      path: /metrics
       interval: 30s
 ```
 
@@ -98,16 +98,16 @@ spec:
 
 ```prometheus
 # Requêtes HTTP totales
-http_requests_total{method="GET",endpoint="/api/projects",status="200"} 1523
+http_requests_total{method="GET",path="/api/projects",status="200"} 1523
 
 # Durée des requêtes (histogramme)
-http_request_duration_seconds_bucket{method="GET",endpoint="/api/projects",le="0.1"} 1420
-http_request_duration_seconds_bucket{method="GET",endpoint="/api/projects",le="0.5"} 1500
-http_request_duration_seconds_sum{method="GET",endpoint="/api/projects"} 145.2
-http_request_duration_seconds_count{method="GET",endpoint="/api/projects"} 1523
+http_request_duration_seconds_bucket{method="GET",path="/api/projects",le="0.1"} 1420
+http_request_duration_seconds_bucket{method="GET",path="/api/projects",le="0.5"} 1500
+http_request_duration_seconds_sum{method="GET",path="/api/projects"} 145.2
+http_request_duration_seconds_count{method="GET",path="/api/projects"} 1523
 
 # Requêtes en cours
-http_requests_in_progress{method="GET",endpoint="/api/projects"} 3
+http_requests_in_progress{method="GET",path="/api/projects"} 3
 
 # Métriques Go
 go_goroutines 15
@@ -128,13 +128,13 @@ histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
 sum(rate(http_requests_total{status=~"4..|5.."}[5m])) / sum(rate(http_requests_total[5m]))
 
 # CPU usage des pods
-sum(rate(container_cpu_usage_seconds_total{namespace="devboard-dev"}[5m])) by (pod)
+sum(rate(container_cpu_usage_seconds_total{namespace="default"}[5m])) by (pod)
 
 # Memory usage des pods
-sum(container_memory_working_set_bytes{namespace="devboard-dev"}) by (pod)
+sum(container_memory_working_set_bytes{namespace="default"}) by (pod)
 
 # Pods non-ready
-count(kube_pod_status_ready{namespace="devboard-dev",condition="false"})
+count(kube_pod_status_ready{namespace="default",condition="false"})
 ```
 
 ### 📝 Fichier de configuration
@@ -155,13 +155,13 @@ spec:
         # Alert: Taux d'erreur élevé
         - alert: HighErrorRate
           expr: |
-            (sum(rate(http_requests_total{status=~"5.."}[5m])) by (endpoint) 
-            / sum(rate(http_requests_total[5m])) by (endpoint)) > 0.05
+            (sum(rate(http_requests_total{status=~"5.."}[5m])) by (path) 
+            / sum(rate(http_requests_total[5m])) by (path)) > 0.05
           for: 5m
           labels:
             severity: warning
           annotations:
-            summary: "Taux d'erreur élevé sur {{ $labels.endpoint }}"
+            summary: "Taux d'erreur élevé sur {{ $labels.path }}"
             description: "Le taux d'erreur est de {{ $value | humanizePercentage }}"
 
         # Alert: Latence élevée
@@ -227,8 +227,8 @@ Plateforme de visualisation pour créer des dashboards interactifs.
    - Type : Time Series
    - Utilisé pour : Métriques
 
-2. **Loki** (à ajouter manuellement)
-   - URL : `http://loki:3100`
+2. **Loki** (préconfiguré)
+   - URL : `http://loki-stack:3100`
    - Type : Logs
    - Utilisé pour : Logs applicatifs
 
@@ -248,15 +248,15 @@ Plateforme de visualisation pour créer des dashboards interactifs.
 **Exemple de requête PromQL** :
 ```promql
 # QPS
-sum(rate(http_requests_total{namespace="devboard-dev"}[5m]))
+sum(rate(http_requests_total{namespace="default"}[5m]))
 
 # Latence P95
 histogram_quantile(0.95, 
-  sum(rate(http_request_duration_seconds_bucket{namespace="devboard-dev"}[5m])) by (le)
+  sum(rate(http_request_duration_seconds_bucket{namespace="default"}[5m])) by (le)
 )
 
 # Erreurs 5xx
-sum(rate(http_requests_total{status=~"5..",namespace="devboard-dev"}[5m]))
+sum(rate(http_requests_total{status=~"5..",namespace="default"}[5m]))
 ```
 
 #### Dashboard 2 : Infrastructure Kubernetes
@@ -295,13 +295,13 @@ sum(kube_pod_status_phase{phase="Running"}) by (namespace)
 **Requêtes PromQL** :
 ```promql
 # CPU usage moyen de l'app
-avg(rate(container_cpu_usage_seconds_total{namespace="devboard-dev"}[5m]))
+avg(rate(container_cpu_usage_seconds_total{namespace="default"}[5m]))
 
 # Memory usage de l'app
-sum(container_memory_working_set_bytes{namespace="devboard-dev"})
+sum(container_memory_working_set_bytes{namespace="default"})
 
 # Nombre de pods
-count(kube_pod_info{namespace="devboard-dev"})
+count(kube_pod_info{namespace="default"})
 ```
 
 #### Dashboard 4 : Sécurité
@@ -386,23 +386,23 @@ Configuration automatique via labels Kubernetes.
 ### 🔍 Requêtes LogQL (dans Grafana Explore)
 
 ```logql
-# Tous les logs du namespace devboard-dev
-{namespace="devboard-dev"}
+# Tous les logs du namespace default
+{namespace="default"}
 
 # Logs du backend uniquement
-{namespace="devboard-dev", container="backend"}
+{namespace="default", container="backend"}
 
 # Logs avec le mot "error"
-{namespace="devboard-dev"} |= "error"
+{namespace="default"} |= "error"
 
 # Logs avec regex
-{namespace="devboard-dev"} |~ "error|failed|panic"
+{namespace="default"} |~ "error|failed|panic"
 
 # Compter les erreurs par minute
-sum by (pod) (rate({namespace="devboard-dev"} |= "error" [1m]))
+sum by (pod) (rate({namespace="default"} |= "error" [1m]))
 
 # Logs des dernières 24h
-{namespace="devboard-dev"} [24h]
+{namespace="default"} [24h]
 ```
 
 ### 🚀 Utiliser Loki dans Grafana
