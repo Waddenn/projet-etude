@@ -546,29 +546,53 @@
       {
         "current": {
           "selected": true,
-          "text": "default",
-          "value": "default"
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": {
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(up, namespace)",
+        "definition": "label_values(kube_pod_info, namespace)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "Namespace",
         "multi": false,
         "name": "namespace",
         "options": [],
         "query": {
-          "query": "label_values(up, namespace)",
-          "refId": "Prometheus-namespace-Variable-Query"
+          "current": {
+            "selected": true,
+            "text": "default",
+            "value": "default"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "definition": "label_values(kube_pod_info, namespace)",
+          "hide": 0,
+          "includeAll": false,
+          "label": "Namespace",
+          "multi": false,
+          "name": "namespace",
+          "options": [],
+          "query": {
+            "query": "label_values(kube_pod_info, namespace)",
+            "refId": "Prometheus-namespace-Variable-Query"
+          },
+          "refresh": 2,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "type": "query"
         },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
-        "type": "query"
+        "type": "query",
+        "allValue": ".*"
       }
     ]
   },
