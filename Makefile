@@ -2,7 +2,7 @@
         infra-init infra-plan infra-apply infra-destroy infra-up \
         infra-up-strict \
         ansible-fix-lxc ansible-prepare ansible-k3s ansible-argocd \
-        generate-secrets setup seed benchmark vault-init argocd-sync dns-setup
+        generate-secrets setup seed benchmark vault-init argocd-sync dns-setup verify
 
 include config.env
 ANSIBLE_FLAGS ?= --forks 20
@@ -184,9 +184,24 @@ argocd-sync: ## Force sync all ArgoCD applications
 	@kubectl get applications -n argocd -o name | xargs -I{} kubectl patch {} -n argocd \
 		-p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}' --type merge
 
+verify: ## Quick post-deploy verification (ArgoCD + workloads + recent warnings)
+	@ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@$(SERVER_IP) "\
+		set -e; \
+		echo '=== ArgoCD Applications ==='; \
+		k3s kubectl get applications -n argocd -o wide; \
+		echo; \
+		echo '=== Non-ready Pods ==='; \
+		k3s kubectl get pods -A --field-selector=status.phase!=Running; \
+		echo; \
+		echo '=== Recent Warning Events ==='; \
+		k3s kubectl get events -A --field-selector type=Warning --sort-by=.lastTimestamp | tail -n 25; \
+	"
+
 dns-setup: ## Add service domains to /etc/hosts
-	@grep -q "$(DOMAIN)" /etc/hosts 2>/dev/null || \
-		(echo "$(SERVER_IP) dev.$(DOMAIN) argocd.$(DOMAIN) grafana.$(DOMAIN) prometheus.$(DOMAIN) vault.$(DOMAIN)" | sudo tee -a /etc/hosts)
+	@for host in dev.$(DOMAIN) argocd.$(DOMAIN) grafana.$(DOMAIN) prometheus.$(DOMAIN) alertmanager.$(DOMAIN) vault.$(DOMAIN); do \
+		grep -Eq "(^|[[:space:]])$$host([[:space:]]|$$)" /etc/hosts 2>/dev/null || \
+			echo "$(SERVER_IP) $$host" | sudo tee -a /etc/hosts > /dev/null; \
+	done
 
 ssh-server: ## SSH into K3s server
 	ssh root@$(SERVER_IP)
