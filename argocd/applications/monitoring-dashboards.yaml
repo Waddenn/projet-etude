@@ -1,8 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: root-app
+  name: monitoring-dashboards
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -10,13 +12,12 @@ spec:
   source:
     repoURL: https://github.com/Waddenn/projet-etude.git
     targetRevision: main
-    path: argocd/applications
+    path: k8s/monitoring-dashboards
     directory:
-      recurse: false
-      include: "{root.yaml,external-secrets-operator.yaml,devboard-secrets.yaml,devboard-app.yaml,ingress-services.yaml,loki-stack.yaml,monitoring-stack.yaml,monitoring-dashboards.yaml,vault.yaml}"
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: monitoring
   syncPolicy:
     automated:
       prune: true
@@ -25,10 +26,3 @@ spec:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
       - PruneLast=true
-      - ServerSideApply=true
-  ignoreDifferences:
-    - group: argoproj.io
-      kind: Application
-      name: root-app
-      jsonPointers:
-        - /metadata/finalizers

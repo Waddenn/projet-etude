@@ -26,7 +26,7 @@ Ajouter dans `/etc/hosts` (Linux/Mac) ou `C:\Windows\System32\drivers\etc\hosts`
 ### Endpoints santé
 - **Backend health** : http://dev.devboard.local/api/health
 - **Backend ready** : http://dev.devboard.local/api/ready
-- **Backend metrics** : http://dev.devboard.local/api/metrics
+- **Backend metrics** : http://dev.devboard.local/metrics
 
 ---
 

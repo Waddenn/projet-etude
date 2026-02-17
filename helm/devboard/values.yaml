@@ -67,3 +67,12 @@ secrets:
 
 networkPolicies:
   enabled: false
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+    labels:
+      release: monitoring-stack
