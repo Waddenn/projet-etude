@@ -130,11 +130,6 @@
           --from-literal=token='{{ vault_dev_root_token }}' \
           --dry-run=client -o yaml | kubectl apply -f -
 
-    - name: Inject secrets into ArgoCD application manifests
-      shell: |
-        cd /tmp/argocd-apps/
-        sed -i 's|__GRAFANA_ADMIN_PASSWORD__|{{ grafana_admin_password }}|g' *.yaml
-
     - name: Apply ArgoCD applications
       shell: kubectl apply -f /tmp/argocd-apps/
       register: apps_result
@@ -164,6 +159,7 @@
           vault secrets enable -path=secret kv-v2 2>/dev/null || true && \
           vault kv put secret/devboard/db username='{{ db_username }}' password='{{ db_password }}' host='devboard-app-postgres' port=5432 database='{{ db_name }}' && \
           vault kv put secret/devboard/jwt secret='{{ jwt_secret }}' && \
+          vault kv put secret/devboard/grafana adminUser='admin' adminPassword='{{ grafana_admin_password }}' && \
           vault policy write devboard /tmp/devboard-policy.hcl \
         "
       when: vault_wait.rc == 0
