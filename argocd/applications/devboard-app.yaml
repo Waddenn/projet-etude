@@ -9,6 +9,7 @@ metadata:
     argocd-image-updater.argoproj.io/backend.update-strategy: latest
     argocd-image-updater.argoproj.io/frontend.update-strategy: latest
     argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/git-commit-message: "chore(image-updater): bump images [skip ci]"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
