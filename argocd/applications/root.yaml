@@ -13,7 +13,7 @@ spec:
     path: argocd/applications
     directory:
       recurse: false
-      include: "{devboard-app.yaml,ingress-services.yaml,loki-stack.yaml,monitoring-stack.yaml,vault.yaml}"
+      include: "{root.yaml,devboard-app.yaml,ingress-services.yaml,loki-stack.yaml,monitoring-stack.yaml,vault.yaml}"
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
