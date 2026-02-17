@@ -2,7 +2,7 @@
         infra-init infra-plan infra-apply infra-destroy infra-up \
         infra-up-strict \
         ansible-fix-lxc ansible-prepare ansible-k3s ansible-argocd \
-        generate-secrets setup seed benchmark vault-init argocd-sync dns-setup verify
+        generate-secrets setup seed benchmark vault-init argocd-sync dns-setup verify sync-k8s-secrets
 
 include config.env
 ANSIBLE_FLAGS ?= --forks 20
@@ -161,6 +161,16 @@ seed: ## Seed database with sample data
 	do curl -sf -X POST "$$API/projects" -H "Content-Type: application/json" -d "$$p" > /dev/null && \
 		echo "  Created: $$(echo $$p | grep -o '"name":"[^"]*"' | cut -d'"' -f4)"; \
 	done
+
+sync-k8s-secrets: ## Sync devboard-secrets in K8s from .env.secrets (GitOps-friendly)
+	@. ./.env.secrets && \
+	kubectl create namespace default --dry-run=client -o yaml | kubectl apply -f - && \
+	kubectl create secret generic devboard-secrets -n default \
+		--from-literal=db-username="$${DB_USERNAME:-devboard}" \
+		--from-literal=db-password="$$DB_PASSWORD" \
+		--from-literal=database-url="postgres://$${DB_USERNAME:-devboard}:$$DB_PASSWORD@devboard-app-postgres:5432/$${DB_NAME:-devboard}?sslmode=disable" \
+		--from-literal=jwt-secret="$$JWT_SECRET" \
+		--dry-run=client -o yaml | kubectl apply -f -
 
 benchmark: ## Load test (requires hey: go install github.com/rakyll/hey@latest)
 	hey -z $${DURATION:-30s} -c $${CONCURRENCY:-50} $${TARGET_URL:-http://localhost:8080}/api/v1/projects

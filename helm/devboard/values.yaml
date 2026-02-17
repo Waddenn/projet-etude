@@ -54,5 +54,16 @@ ingress:
 certManager:
   enabled: false
 
+secrets:
+  # When false, use an externally managed Kubernetes secret.
+  # Recommended for GitOps/production.
+  create: false
+  # If empty, falls back to "<release>-secrets".
+  name: devboard-secrets
+  dbUsername: devboard
+  dbName: devboard
+  # dbPassword: set only if create=true
+  # jwtSecret: set only if create=true
+
 networkPolicies:
   enabled: false

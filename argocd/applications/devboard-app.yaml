@@ -21,11 +21,6 @@ spec:
       valueFiles:
         - values.yaml
         - values-dev.yaml
-      parameters:
-        - name: secrets.dbPassword
-          value: "__DB_PASSWORD__"
-        - name: secrets.jwtSecret
-          value: "__JWT_SECRET__"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
