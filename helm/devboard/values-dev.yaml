@@ -37,6 +37,11 @@ ingress:
   host: dev.devboard.local
   extraHosts:
     - devboard.local
+  tls:
+    enabled: false
+
+certManager:
+  enabled: false
 
 # ─── Secrets ─────────────────────────────────────────────────────
 # DO NOT put real passwords here (committed to Git).

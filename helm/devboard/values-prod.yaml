@@ -15,6 +15,12 @@ postgres:
 ingress:
   host: devboard.local
   extraHosts: []
+  tls:
+    enabled: true
+    issuer: letsencrypt-staging
+
+certManager:
+  enabled: true
 
 networkPolicies:
   enabled: true

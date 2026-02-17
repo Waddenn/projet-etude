@@ -6,8 +6,10 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    {{- if .Values.ingress.tls.enabled }}
+    {{- if and .Values.ingress.tls.enabled .Values.certManager.enabled }}
     cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.issuer | default "selfsigned-issuer" }}
+    {{- end }}
+    {{- if .Values.ingress.tls.enabled }}
     traefik.ingress.kubernetes.io/router.tls: "true"
     {{- end }}
 spec:

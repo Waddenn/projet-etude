@@ -49,7 +49,7 @@
           --node-ip {{ ansible_host }} \
           --flannel-iface eth0
       args:
-        creates: /usr/local/bin/k3s
+        creates: /etc/systemd/system/k3s.service
 
     - name: Wait for K3s to be ready
       command: k3s kubectl get nodes
@@ -57,6 +57,7 @@
       until: result.rc == 0
       retries: 30
       delay: 10
+      changed_when: false
 
     - name: Get node token
       slurp:
@@ -93,7 +94,7 @@
           --node-ip {{ ansible_host }} \
           --flannel-iface eth0
       args:
-        creates: /usr/local/bin/k3s-agent
+        creates: /etc/systemd/system/k3s-agent.service
 
     - name: Wait for agent to join
       delegate_to: "{{ groups['k3s_server'][0] }}"
@@ -102,3 +103,4 @@
       until: agent_joined.rc == 0
       retries: 30
       delay: 10
+      changed_when: false

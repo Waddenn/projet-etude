@@ -1,9 +1,11 @@
 .PHONY: help up down dev logs build test lint scan \
         infra-init infra-plan infra-apply infra-destroy infra-up \
+        infra-up-strict \
         ansible-fix-lxc ansible-prepare ansible-k3s ansible-argocd \
         generate-secrets setup seed benchmark vault-init argocd-sync dns-setup
 
 include config.env
+ANSIBLE_FLAGS ?= --forks 20
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | \
@@ -83,7 +85,9 @@ infra-destroy: ## Terraform destroy (remove LXC)
 	@printf "Destroy all infrastructure? [y/N] " && read ans && [ "$${ans}" = "y" ] && \
 		(cd infra/terraform && terraform destroy) || echo "Aborted."
 
-infra-up: infra-apply _wait-ssh ansible-prepare ansible-k3s ansible-argocd dns-setup ## Full deploy pipeline
+infra-up: infra-apply ansible-prepare ansible-k3s ansible-argocd dns-setup ## Full deploy pipeline (fast/idempotent path)
+
+infra-up-strict: infra-apply _wait-ssh ansible-prepare ansible-k3s ansible-argocd-strict dns-setup ## Full deploy with strict readiness checks
 
 _wait-ssh: ## (internal) Quick SSH check (Terraform already verified)
 	@echo "Quick SSH verification..."
@@ -99,16 +103,19 @@ _wait-ssh: ## (internal) Quick SSH check (Terraform already verified)
 # ─── Ansible ─────────────────────────────────────────────────
 
 ansible-fix-lxc: ## Fix LXC configs for K3s
-	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/fix-lxc-config.yml
+	cd infra/ansible && ansible-playbook $(ANSIBLE_FLAGS) -i inventory/dev.yml playbooks/fix-lxc-config.yml
 
 ansible-prepare: ## Prepare containers for K3s
-	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/prepare-lxc-k3s.yml
+	cd infra/ansible && ansible-playbook $(ANSIBLE_FLAGS) -i inventory/dev.yml playbooks/prepare-lxc-k3s.yml
 
 ansible-k3s: ## Install K3s cluster
-	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/install-k3s.yml
+	cd infra/ansible && ansible-playbook $(ANSIBLE_FLAGS) -i inventory/dev.yml playbooks/install-k3s.yml
 
 ansible-argocd: ## Bootstrap ArgoCD + applications
-	cd infra/ansible && ansible-playbook -i inventory/dev.yml playbooks/bootstrap-argocd.yml
+	cd infra/ansible && ansible-playbook $(ANSIBLE_FLAGS) -i inventory/dev.yml playbooks/bootstrap-argocd.yml
+
+ansible-argocd-strict: ## Bootstrap ArgoCD + applications (wait for sync)
+	cd infra/ansible && ARGOCD_WAIT_INITIAL_SYNC=true ansible-playbook $(ANSIBLE_FLAGS) -i inventory/dev.yml playbooks/bootstrap-argocd.yml
 
 # ─── Secrets & Setup ─────────────────────────────────────────
 

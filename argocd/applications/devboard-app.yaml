@@ -4,6 +4,7 @@ metadata:
   name: devboard-app
   namespace: argocd
   annotations:
+    argocd.argoproj.io/sync-wave: "0"
     argocd-image-updater.argoproj.io/image-list: backend=ghcr.io/waddenn/projet-etude/backend, frontend=ghcr.io/waddenn/projet-etude/frontend
     argocd-image-updater.argoproj.io/backend.update-strategy: latest
     argocd-image-updater.argoproj.io/frontend.update-strategy: latest
@@ -19,6 +20,7 @@ spec:
     helm:
       valueFiles:
         - values.yaml
+        - values-dev.yaml
       parameters:
         - name: secrets.dbPassword
           value: "__DB_PASSWORD__"
@@ -33,3 +35,11 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
