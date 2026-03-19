@@ -65,35 +65,6 @@ make sync-vault-secrets # Synchroniser les secrets runtime vers Vault puis refre
 make sync-vault-secrets
 ```
 
-## Architecture
-
-```
-                    GitHub Actions (CI/CD)
-                         │
-                    ┌────┴────┐
-                    │ lint    │
-                    │ test    │
-                    │ build   │
-                    │ scan    │
-                    │ deploy  │
-                    └────┬────┘
-                         │
-              ┌──────────┴──────────┐
-              │   Cluster K3s       │
-              │                     │
-              │  Frontend ──► Backend ──► PostgreSQL
-              │                │
-              │           /metrics
-              │                │
-              │  Prometheus ◄──┘
-              │      │
-              │  Grafana (4 dashboards)
-              │  Loki (logs)
-              │  Vault (secrets)
-              │  LitmusChaos (bonus)
-              └─────────────────────┘
-```
-
 ## Structure du projet
 
 ```
@@ -109,15 +80,6 @@ make sync-vault-secrets
 ├── docs/              Documentation et ADR
 └── .github/workflows/ Pipeline CI/CD
 ```
-
-## Documentation
-
-- [Architecture technique](docs/architecture.md)
-- [Guide d'installation](docs/installation-guide.md)
-- [Guide utilisateur](docs/user-guide.md)
-- [Guide d'administration](docs/admin-guide.md)
-- [Rapport Green IT](docs/green-it-report.md)
-- [Architecture Decision Records](docs/adr/)
 
 ## Équipe
 
