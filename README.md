@@ -65,6 +65,16 @@ make sync-vault-secrets # Synchroniser les secrets runtime vers Vault puis refre
 make sync-vault-secrets
 ```
 
+## URLs d'accès
+
+Après avoir ajouté les entrées locales de résolution DNS via `make dns-setup`, les services sont accessibles sur:
+
+- Application: `http://dev.devboard.local`
+- ArgoCD: `http://argocd.devboard.local`
+- Grafana: `http://grafana.devboard.local`
+- Prometheus: `http://prometheus.devboard.local`
+- Alertmanager: `http://alertmanager.devboard.local`
+- Vault: `http://vault.devboard.local`
 ## Structure du projet
 
 ```
