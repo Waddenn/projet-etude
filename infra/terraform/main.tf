@@ -43,9 +43,9 @@ resource "null_resource" "fix_lxc_config" {
 
   provisioner "remote-exec" {
     connection {
-      type = "ssh"
-      host = var.proxmox_ssh_host
-      user = "root"
+      type  = "ssh"
+      host  = var.proxmox_ssh_host
+      user  = "root"
       agent = true
     }
 

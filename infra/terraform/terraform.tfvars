@@ -12,7 +12,7 @@ proxmox_username = "root@pam"
 
 # LXC config
 lxc_template        = "local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst"
-ssh_public_key_path = "~/.ssh/id_rsa.pub"
+ssh_public_key_path = "ssh_public_key.pub"
 
 # Set root password via environment variable:
 #   export TF_VAR_lxc_root_password="your-password"
