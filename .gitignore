@@ -19,3 +19,4 @@ infra/ansible/kubeconfig.yaml
 
 # ─── Local dev ───────────────────────────────────────────────
 .env
+app/frontend/coverage/
