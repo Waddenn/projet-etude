@@ -34,13 +34,6 @@ make up
 # Ajouter des données de test
 make seed
 
-# Accéder à l'application
-# Frontend : http://localhost:3000
-# API :      http://localhost:8080/api/v1/projects
-# Health :   http://localhost:8080/health
-# Metrics :  http://localhost:8080/metrics
-```
-
 ## Commandes utiles
 
 ```bash
@@ -53,21 +46,7 @@ make benchmark     # Lancer un test de charge
 make infra-up      # Déployer le cluster K3s complet
 make sync-vault-secrets # Synchroniser les secrets runtime vers Vault puis refresh ExternalSecret
 ```
-
-## Gestion des secrets (Vault source unique)
-
-- Les secrets applicatifs ne sont plus injectés dans les manifests ArgoCD.
-- Vault est la source unique de vérité pour les secrets applicatifs.
-- External Secrets Operator matérialise automatiquement `devboard-secrets` dans Kubernetes.
-- Pour synchroniser `.env.secrets` vers Vault puis forcer la resynchronisation:
-
-```bash
-make sync-vault-secrets
-```
-
 ## URLs d'accès
-
-Après avoir ajouté les entrées locales de résolution DNS via `make dns-setup`, les services sont accessibles sur:
 
 - Application: `http://dev.devboard.local`
 - ArgoCD: `http://argocd.devboard.local`
@@ -75,21 +54,6 @@ Après avoir ajouté les entrées locales de résolution DNS via `make dns-setup
 - Prometheus: `http://prometheus.devboard.local`
 - Alertmanager: `http://alertmanager.devboard.local`
 - Vault: `http://vault.devboard.local`
-## Structure du projet
-
-```
-├── app/backend/       API Go (Gin)
-├── app/frontend/      React (Vite)
-├── infra/terraform/   Provisionnement LXC (Proxmox)
-├── infra/ansible/     Installation K3s et outils
-├── helm/devboard/     Chart Helm
-├── argocd/            Définitions ArgoCD (GitOps)
-├── monitoring/        Règles Prometheus
-├── security/          Vault, Trivy, RBAC
-├── chaos/             Scénarios LitmusChaos
-├── docs/              Documentation et ADR
-└── .github/workflows/ Pipeline CI/CD
-```
 
 ## Équipe
 
